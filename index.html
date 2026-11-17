@@ -23,6 +23,7 @@
   --bar-org: #8a5bb0;
   --bar-deadline: #c08a1c;
   --bar-less: #b3322f;
+  --bar-content: #c0507a;
   --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -30,17 +31,18 @@
   :root:not([data-theme="light"]) {
     --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
     --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77;
+    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
   --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77;
+  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -57,9 +59,9 @@ section.panel { background: var(--panel); border: 1px solid var(--line); border-
 h2 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
 label { font-size: 12px; color: var(--muted); display: grid; gap: 3px; }
-input, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; min-width: 0; width: 100%; }
+input, select, textarea { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; min-width: 0; width: 100%; }
 input[type="number"] { font-family: var(--font-mono); }
-input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button { font: inherit; font-size: 13px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 5px 10px; cursor: pointer; }
 button.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); }
 button.icon { padding: 2px 8px; color: var(--muted); }
@@ -86,7 +88,9 @@ summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 2px 0; }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th, td { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; vertical-align: top; }
 th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
-td input, td select { padding: 3px 5px; font-size: 12.5px; }
+td input, td select, td textarea { padding: 3px 5px; font-size: 12.5px; }
+textarea { resize: vertical; min-width: 0; }
+td.desc textarea { min-width: 260px; }
 .result-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
 .result-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
 ol.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -139,11 +143,10 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
 </head>
 <body>
 
-
 <header>
   <div>
     <h1>Dearby 맞춤 대기열 실험실</h1>
-    <p>서버 PR #284의 점수 규칙(QueueRules)을 그대로 옮긴 계산기입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
+    <p>서버의 맞춤 대기열 규칙(QueueRules · ContentMatch, PR #284 · #285 · #286 · #287 · #291)을 그대로 옮긴 계산기입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
   </div>
   <div class="head-actions">
     <div class="tabs" role="tablist" aria-label="보기">
@@ -175,7 +178,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <button type="button" id="trace-undo">마지막 동작 되돌리기</button>
         <button type="button" id="trace-clear">추적 처음부터</button>
       </div>
-      <p class="hint">회원·후보·가중치는 "계산기" 보기의 값을 그대로 씁니다. 동작은 오늘(0일 전) 기록으로 더해집니다. 서버는 그날 받은 묶음을 고정하므로 순위 변화는 다음 묶음에 반영됩니다. "다음 묶음 만들기"는 몇 번이든 누를 수 있고, 지금까지의 동작을 반영해 새로 고릅니다(관심 없어요 · 자격 안 됨 · 숨긴 시리즈 · 신청한 활동은 빠지고, 넘기기만 한 활동은 다시 나올 수 있어요).</p>
+      <p class="hint">회원·후보·가중치는 "계산기" 보기의 값을 그대로 씁니다. 동작은 오늘(0일 전) 기록으로 더해집니다. 서버는 그날 받은 묶음을 고정하므로 순위 변화는 다음 묶음에 반영됩니다(동작을 누르기 전에는 계산기를 고치면 첫 묶음도 바뀌고, 한 번 누른 뒤에는 받은 묶음이 고정돼요). "다음 묶음 만들기"는 몇 번이든 누를 수 있습니다. 아직 받지 않은 후보를 점수 순으로 먼저 붙이고(같은 시리즈 둘까지는 오늘 받은 것 전체에서 셉니다), 모자라면 이미 받은 활동과 시리즈 한도에 걸린 후보를 지금 신호로 다시 점수 매겨 채웁니다(신청 · 관심 없어요 · 자격 안 됨 · 숨긴 시리즈는 빠지고, 바로 앞 묶음에 든 것은 맨 뒤로 미뤄요). 같은 활동은 마지막 자리 하나만 보입니다.</p>
     </section>
   </div>
   <div class="col">
@@ -186,6 +189,10 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     <section class="panel" aria-labelledby="h-interest">
       <h2 id="h-interest">지금의 관심 <small>−1~1, 기록 합을 맞춘 값</small></h2>
       <div id="trace-interest"></div>
+    </section>
+    <section class="panel" aria-labelledby="h-vector">
+      <h2 id="h-vector">사용자 벡터 상위 낱말 <small>u에서 절댓값이 큰 10개</small></h2>
+      <div id="trace-vector"></div>
     </section>
     <section class="panel" aria-labelledby="h-log">
       <h2 id="h-log">동작 기록</h2>
@@ -210,6 +217,14 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <p class="hint">희망 직무의 이름·별칭은 1.0, 그 상위 분류는 0.6, 현직업 직무는 0.7, 그 상위는 0.4. 분야 태그와 공백·가운뎃점을 뺀 글자로 견주고, 두 글자 이상이면 한쪽이 다른 쪽에 들어도 맞습니다.</p>
       </details>
       <details open>
+        <summary>팔로우한 시리즈 · 조직</summary>
+        <p class="hint" style="margin:0 0 4px">시리즈</p>
+        <div class="chips" id="follow-programs"></div>
+        <p class="hint" style="margin:8px 0 4px">조직</p>
+        <div class="chips" id="follow-orgs"></div>
+        <p class="hint">누르면 넣고 뺍니다. 팔로우한 시리즈의 활동은 기록과 관계없이 시리즈 관심 1.0, 여는 조직이 팔로우한 조직과 같으면 조직 관심 1.0입니다(위·아래 조직으로는 넓히지 않아요). 이유는 "팔로우한 시리즈 이름"이 맨 앞, "팔로우한 조직 이름"이 소속 앞에 붙습니다.</p>
+      </details>
+      <details open>
         <summary>소속 조직</summary>
         <div class="chips" id="member-orgs"></div>
         <p class="hint">누르면 넣고 뺍니다. 같은 조직이면 1, 한쪽이 다른 쪽의 상위면 0.6(바로 아래 조직이 10곳 넘는 넓은 상위 조직은 빼요).</p>
@@ -225,7 +240,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <div class="rows" id="less"></div>
         <button type="button" id="add-less" class="icon">+ 분야</button>
       </details>
-      <p class="hint">신청(확정·대기)은 활동마다 강한 것 하나만 셉니다. 신청한 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다. 찜·캘린더에만·지금 상태는 계약에 없어 쓰지 않습니다(찜은 관심 있어요로, 자격은 자격 안 됨 반응으로).</p>
+      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 관심 있어요면 "관심 표시한 시리즈"가 이유입니다. 신청한 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다. 찜·캘린더에만·지금 상태는 계약에 없어 쓰지 않습니다(찜은 관심 있어요로, 자격은 자격 안 됨 반응으로).</p>
     </section>
 
     <section class="panel" aria-labelledby="h-weights">
@@ -234,9 +249,9 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     </section>
 
     <section class="panel" aria-labelledby="h-acts">
-      <h2 id="h-acts">후보 활동 <small>모집 중인 공개 활동</small></h2>
+      <h2 id="h-acts">후보 활동 <small>모집 중인 공개 활동 · 소개는 내용 관심의 글</small></h2>
       <div class="act-table"><table>
-        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>여는 조직</th><th>마감</th><th>필수 자격(참고)</th><th></th></tr></thead>
+        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>소개</th><th>여는 조직</th><th>마감</th><th>필수 자격(참고)</th><th></th></tr></thead>
         <tbody id="acts"></tbody>
       </table></div>
       <button type="button" id="add-act" class="icon">+ 활동</button>
@@ -259,7 +274,9 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
       </details>
       <details>
         <summary>점수 식</summary>
-        <p class="hint">점수 = 분야 × 분야 관심 + 종류 × 종류 관심 + 조직 × 조직·시리즈 관심 + (14일 안 마감이면 마감) − 덜 보기 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필과 기록이 모두 비면 마감 순입니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
+        <p class="hint">점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 15 × 내용 관심 + 5 × (14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필·기록·팔로우가 모두 비면 마감 순이고 내용 관심은 쓰지 않습니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
+        <p class="hint">조직·시리즈 관심 = clamp(max(소속, 조직 팔로우, max(기록의 조직, 0)) + max(시리즈, 0) + min(기록의 조직, 0) + min(시리즈, 0), −1, 1). 팔로우한 시리즈는 시리즈 관심 1.0.</p>
+        <p class="hint">내용 관심 = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 u·d가 큰 낱말 둘이 이유가 됩니다.</p>
       </details>
     </section>
   </div>
@@ -268,9 +285,10 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
 <script>
 const KINDS = { BOOTCAMP: "부트캠프", CLUB: "동아리", CONTEST: "공모전", HACKATHON: "해커톤", STUDY: "스터디", CONFERENCE: "컨퍼런스", MEETUP: "밋업", LECTURE: "강연", WORKSHOP: "워크숍", OTHER: "기타" };
 const JOB_PRESETS = [["희망 직무", 1.0], ["희망 직무의 상위", 0.6], ["현직업", 0.7], ["현직업의 상위", 0.4]];
+// [화면 이름, 가중치 키, 같은 시리즈의 이유로 쓸 관계]
 const HISTORY_KINDS = {
-  PARTICIPATED: ["확정된 신청", "PARTICIPATED", "APPLIED"],
-  APPLIED: ["신청(본인 기록 포함)", "APPLIED", "APPLIED"],
+  PARTICIPATED: ["확정된 신청", "PARTICIPATED", "CONFIRMED"],
+  APPLIED: ["신청", "APPLIED", "APPLIED"],
   CANCELLED: ["신청 취소", "CANCELLED", null],
   LIKE: ["관심 있어요", "LIKE", "LIKED"],
   COMPLETE: ["끝까지 봄", "COMPLETE", null],
@@ -282,20 +300,29 @@ const HISTORY_KINDS = {
 };
 const MY_ACTIVITY = ["PARTICIPATED", "APPLIED"];
 const STRENGTH = { PARTICIPATED: 2, APPLIED: 1 };
-const RELATION_REASONS = { APPLIED: "지난 기수에 신청했어요", LIKED: "관심 표시한 시리즈" };
-const RELATION_ORDER = ["APPLIED", "LIKED"];
+const RELATION_REASONS = { CONFIRMED: "지난 기수에 참여했어요", APPLIED: "지난 기수에 신청했어요", LIKED: "관심 표시한 시리즈" };
+const RELATION_ORDER = ["CONFIRMED", "APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
-  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
+  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], CONTENT_POINTS: [15, "내용"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
   PARTICIPATED: [1.0, "기록: 확정된 신청"], APPLIED: [0.7, "기록: 신청"], CANCELLED: [-0.2, "기록: 신청 취소"],
   LIKE: [0.4, "반응: 관심 있어요"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
   HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], PER_PROGRAM: [2, "같은 시리즈 최대"], SIZE: [10, "고르는 수"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
-  MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
+  MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], FOLLOWED_PROGRAM: [1.0, "팔로우한 시리즈의 시리즈 관심"], FOLLOWED_ORGANIZATION: [1.0, "팔로우한 조직의 조직 관심"],
+  ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
+  K1: [1.2, "내용: k1(낱말 빈도 포화)"], B: [0.75, "내용: b(문서 길이 보정)"], GAMMA: [1.0, "내용: γ(부정 기록을 빼는 정도)"], PROFILE_WEIGHT: [1.0, "내용: 직무 낱말 p의 무게"], CONTENT_THRESHOLD: [0.3, "내용 이유로 쓰는 하한"],
 };
+
+// 내용 관심의 불용어(ContentTokenizer.STOP_WORDS): 낱말과 조각 모두에 적용
+const STOP_WORDS = new Set(["모집", "기수", "참가자", "참가", "활동", "프로그램", "지원", "지원자", "신청", "참여", "대상", "운영", "진행", "예정",
+  "과정", "교육생", "수료", "기간", "일정", "안내", "모집중", "있는", "있습", "합니", "니다", "습니", "됩니", "위한", "통해",
+  "함께", "그리고", "the", "and", "for", "with", "of", "to", "in"]);
 
 const EXAMPLE = {
   today: "2026-11-17",
   jobs: [{ text: "데이터 사이언티스트", w: 1.0 }, { text: "데이터·AI", w: 0.6 }, { text: "백엔드", w: 0.7 }],
   memberOrgs: ["o-snu-cse"],
+  followPrograms: [],
+  followOrgs: [],
   orgs: [
     { id: "o-snu", name: "서울대학교", parent: "" },
     { id: "o-snu-cse", name: "서울대 컴퓨터공학부", parent: "o-snu" },
@@ -310,18 +337,18 @@ const EXAMPLE = {
     { id: "o-nipa", name: "정보통신산업진흥원", parent: "" },
   ],
   acts: [
-    { id: "a1", name: "부스트캠프 웹·모바일 11기", program: "부스트캠프 웹·모바일", kind: "BOOTCAMP", tags: "백엔드, 프론트엔드", org: "o-boost", end: "2026-11-24", elig: "" },
-    { id: "a2", name: "부스트캠프 AI Tech 9기", program: "부스트캠프 AI Tech", kind: "BOOTCAMP", tags: "데이터·AI, 머신러닝", org: "o-boost", end: "2026-11-28", elig: "" },
-    { id: "a3", name: "SSAFY 15기", program: "SSAFY", kind: "BOOTCAMP", tags: "백엔드, 소프트웨어 개발", org: "o-ssafy", end: "2026-12-05", elig: "미취업자" },
-    { id: "a4", name: "AWS 클라우드 컨퍼런스 2026", program: "AWS 클라우드 컨퍼런스", kind: "CONFERENCE", tags: "클라우드, 백엔드", org: "o-aws", end: "2026-11-20", elig: "" },
-    { id: "a5", name: "카카오 데이터 분석 공모전", program: "카카오 데이터 공모전", kind: "CONTEST", tags: "데이터·AI, 데이터 분석", org: "o-kakao", end: "2026-12-20", elig: "대학생" },
-    { id: "a6", name: "멋사 대학 14기 운영진", program: "멋쟁이사자처럼 대학", kind: "CLUB", tags: "프론트엔드, 기획", org: "o-likelion", end: "2026-11-19", elig: "재학생" },
-    { id: "a7", name: "삼성SDS 클라우드 해커톤", program: "SDS 해커톤", kind: "HACKATHON", tags: "클라우드, 데이터·AI", org: "o-sds", end: "2026-12-01", elig: "재직자" },
-    { id: "a8", name: "서울대 AI 세미나 겨울", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI, 머신러닝", org: "o-snu-cse", end: "2026-12-10", elig: "" },
-    { id: "a9", name: "서울대 AI 세미나 특강", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI", org: "o-snu-cse", end: "2026-11-30", elig: "" },
-    { id: "a10", name: "서울대 AI 세미나 워크숍", program: "서울대 AI 세미나", kind: "WORKSHOP", tags: "데이터·AI", org: "o-snu-cse", end: "2026-11-26", elig: "" },
-    { id: "a11", name: "UX 디자인 스터디 3기", program: "UX 디자인 스터디", kind: "STUDY", tags: "디자인, UX", org: "", end: "2026-11-22", elig: "" },
-    { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", org: "o-nipa", end: "2027-01-15", elig: "미취업청년" },
+    { id: "a1", name: "부스트캠프 웹·모바일 11기", program: "부스트캠프 웹·모바일", kind: "BOOTCAMP", tags: "백엔드, 프론트엔드", desc: "웹 서비스와 모바일 앱을 직접 만들어 보는 개발 과정입니다. 서버와 화면을 함께 다루고, 팀 프로젝트로 한 학기를 마무리합니다.", org: "o-boost", end: "2026-11-24", elig: "" },
+    { id: "a2", name: "부스트캠프 AI Tech 9기", program: "부스트캠프 AI Tech", kind: "BOOTCAMP", tags: "데이터·AI, 머신러닝", desc: "머신러닝과 딥러닝 모델을 데이터로 직접 학습시키는 과정입니다. 논문을 읽고, 대회 형식의 팀 프로젝트로 모델 성능을 겨룹니다.", org: "o-boost", end: "2026-11-28", elig: "" },
+    { id: "a3", name: "SSAFY 15기", program: "SSAFY", kind: "BOOTCAMP", tags: "백엔드, 소프트웨어 개발", desc: "소프트웨어 개발 기초부터 서버 개발까지 매일 코딩하며 배우는 장기 과정입니다. 알고리즘 수업과 팀 프로젝트를 함께 합니다.", org: "o-ssafy", end: "2026-12-05", elig: "미취업자" },
+    { id: "a4", name: "AWS 클라우드 컨퍼런스 2026", program: "AWS 클라우드 컨퍼런스", kind: "CONFERENCE", tags: "클라우드, 백엔드", desc: "클라우드 인프라와 서버 운영 사례를 발표와 실습으로 소개하는 하루 행사입니다. 서버 비용을 줄이는 방법과 배포 자동화를 다룹니다.", org: "o-aws", end: "2026-11-20", elig: "" },
+    { id: "a5", name: "카카오 데이터 분석 공모전", program: "카카오 데이터 공모전", kind: "CONTEST", tags: "데이터·AI, 데이터 분석", desc: "실제 서비스에서 나온 이용 기록 데이터를 분석해 개선안을 찾는 공모전입니다. 분석 결과를 시각화해 발표하고 우수 팀을 시상합니다.", org: "o-kakao", end: "2026-12-20", elig: "대학생" },
+    { id: "a6", name: "멋사 대학 14기 운영진", program: "멋쟁이사자처럼 대학", kind: "CLUB", tags: "프론트엔드, 기획", desc: "대학 동아리를 이끌며 웹 서비스 기획과 프론트엔드 개발을 함께 하는 운영진을 찾습니다. 학기 중 주간 세션과 해커톤을 준비합니다.", org: "o-likelion", end: "2026-11-19", elig: "재학생" },
+    { id: "a7", name: "삼성SDS 클라우드 해커톤", program: "SDS 해커톤", kind: "HACKATHON", tags: "클라우드, 데이터·AI", desc: "클라우드 환경에서 데이터를 처리하고 인공지능 기능을 붙여 보는 해커톤입니다. 사흘 동안 팀을 꾸려 서비스를 만들고 멘토의 평가를 받습니다.", org: "o-sds", end: "2026-12-01", elig: "재직자" },
+    { id: "a8", name: "서울대 AI 세미나 겨울", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI, 머신러닝", desc: "머신러닝 연구 동향을 교수와 대학원생이 나누는 겨울 세미나입니다. 모델의 학습 방법과 최신 논문을 함께 읽습니다.", org: "o-snu-cse", end: "2026-12-10", elig: "" },
+    { id: "a9", name: "서울대 AI 세미나 특강", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI", desc: "인공지능이 실제 데이터에서 문제를 푸는 과정을 사례로 설명하는 특강입니다. 질의응답 시간을 넉넉하게 둡니다.", org: "o-snu-cse", end: "2026-11-30", elig: "" },
+    { id: "a10", name: "서울대 AI 세미나 워크숍", program: "서울대 AI 세미나", kind: "WORKSHOP", tags: "데이터·AI", desc: "파이썬으로 데이터를 불러와 간단한 모델을 직접 학습시키는 실습 워크숍입니다. 노트북 컴퓨터를 가져오면 됩니다.", org: "o-snu-cse", end: "2026-11-26", elig: "" },
+    { id: "a11", name: "UX 디자인 스터디 3기", program: "UX 디자인 스터디", kind: "STUDY", tags: "디자인, UX", desc: "사용자 인터뷰와 화면 설계를 주제로 매주 모여 과제를 나누는 디자인 스터디입니다. 서비스 개선안을 함께 그려 봅니다.", org: "", end: "2026-11-22", elig: "" },
+    { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", desc: "소프트웨어 개발 직무를 준비하는 청년을 위한 교육 과정입니다. 코딩 기초와 프로젝트 실습, 취업 상담을 제공합니다.", org: "o-nipa", end: "2027-01-15", elig: "미취업청년" },
   ],
   history: [
     { act: "a2", kind: "LIKE", days: 30 },
@@ -333,8 +360,8 @@ const EXAMPLE = {
 };
 
 let state = load() || structuredClone(EXAMPLE);
-function load() { try { const s = localStorage.getItem("queue-lab-v2"); return s ? JSON.parse(s) : null; } catch { return null; } }
-function save() { try { localStorage.setItem("queue-lab-v2", JSON.stringify(state)); } catch {} }
+function load() { try { const s = localStorage.getItem("queue-lab-v3"); return s ? JSON.parse(s) : null; } catch { return null; } }
+function save() { try { localStorage.setItem("queue-lab-v3", JSON.stringify(state)); } catch {} }
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -348,6 +375,7 @@ function matches(tagName, term) {
 }
 const squash = (s) => Math.sign(s) * (1 - Math.exp(-Math.abs(s)));
 const tagsOf = (a) => a.tags.split(",").map((t) => t.trim()).filter(Boolean);
+const rid = () => Math.random().toString(36).slice(2, 9);
 
 // 자격 판정(EligibilityRules): 표에 있는 낱말 그대로일 때만
 const ELIG = [
@@ -367,6 +395,106 @@ function ineligible(act, status) {
   return null;
 }
 
+// 낱말 나누기(ContentTokenizer.tokens): NFC, 글자·숫자가 아닌 것으로 나누기, 소문자, 한 글자 버림, 불용어 버림,
+// 세 글자 이상 낱말은 이어진 한글 두 글자 조각도 더한다. 낱말마다 원래 낱말(word)을 함께 둔다
+const isHangul = (c) => c >= "가" && c <= "힣";
+function tokenize(text) {
+  const out = [];
+  for (const word of String(text).normalize("NFC").split(/[^\p{L}\p{N}]+/u)) {
+    if (word.length < 2) continue;
+    const lower = word.toLowerCase();
+    const stop = STOP_WORDS.has(lower);
+    if (!stop) out.push({ term: lower, word });
+    if (stop || lower.length < 3) continue;
+    for (let i = 0; i + 2 <= lower.length; i++) {
+      const pair = lower.slice(i, i + 2);
+      if (isHangul(pair[0]) && isHangul(pair[1]) && !STOP_WORDS.has(pair)) out.push({ term: pair, word });
+    }
+  }
+  return out;
+}
+function l2(map) {
+  let s = 0; for (const v of map.values()) s += v * v;
+  const len = Math.sqrt(s);
+  const out = new Map();
+  if (len > 0) for (const [k, v] of map) out.set(k, v / len);
+  return out;
+}
+// 내용 관심(ContentMatch): corpus [{id, text}], history [[활동 id, 감쇠한 가중치(부정은 음수)]], profile Map(낱말 → 무게)
+function buildContent(corpus, history, profile, W) {
+  const docs = new Map();
+  for (const c of corpus) {
+    if (docs.has(c.id)) continue;
+    const toks = tokenize(c.text);
+    const counts = new Map(), words = new Map();
+    for (const t of toks) {
+      counts.set(t.term, (counts.get(t.term) || 0) + 1);
+      if (!words.has(t.term)) words.set(t.term, new Set());
+      words.get(t.term).add(t.word);
+    }
+    docs.set(c.id, { counts, words, len: toks.length });
+  }
+  const lens = [...docs.values()].map((d) => d.len);
+  const avg = lens.length && lens.reduce((s, v) => s + v, 0) / lens.length > 0 ? lens.reduce((s, v) => s + v, 0) / lens.length : 1;
+  const df = new Map();
+  for (const d of docs.values()) for (const t of d.counts.keys()) df.set(t, (df.get(t) || 0) + 1);
+  const N = docs.size;
+  const idf = (t) => Math.log(1 + (N - (df.get(t) || 0) + 0.5) / ((df.get(t) || 0) + 0.5));
+  const vectors = new Map();
+  for (const [id, d] of docs) {
+    const nrm = W.K1 * (1 - W.B + W.B * d.len / avg);
+    const w = new Map();
+    for (const [t, tf] of d.counts) w.set(t, idf(t) * tf * (W.K1 + 1) / (tf + nrm));
+    vectors.set(id, l2(w));
+  }
+  const sum = new Map();
+  const addTo = (t, v) => sum.set(t, (sum.get(t) || 0) + v);
+  for (const [id, weight] of history) {
+    const scale = weight < 0 ? W.GAMMA * weight : weight;
+    const v = vectors.get(id);
+    if (v) for (const [t, x] of v) addTo(t, scale * x);
+  }
+  const p = new Map();
+  for (const [t, w] of profile) p.set(t, w * idf(t));
+  for (const [t, x] of l2(p)) addTo(t, W.PROFILE_WEIGHT * x);
+  const user = l2(sum);
+  return {
+    user, size: N, vocabulary: df.size,
+    score(id) {
+      const v = vectors.get(id); if (!v) return 0;
+      let s = 0; for (const [t, x] of v) s += x * (user.get(t) || 0);
+      return Math.max(0, s);
+    },
+    // u_t · d_t가 큰 원래 낱말(큰 순). 같은 낱말 조각이 여러 원래 낱말에서 나왔으면 똑같이 나누고, 소문자로 같은 낱말은 하나만
+    topWords(id) {
+      const v = vectors.get(id); if (!v) return [];
+      const doc = docs.get(id);
+      const byWord = new Map();
+      for (const [t, x] of v) {
+        const ut = user.get(t); if (ut === undefined) continue;
+        const ws = doc.words.get(t);
+        for (const w of ws) byWord.set(w, (byWord.get(w) || 0) + x * ut / ws.size);
+      }
+      const seen = new Set();
+      return [...byWord].filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).map(([w]) => w).filter((w) => { const k = w.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+    },
+  };
+}
+
+const byDeadline = (x, y) => (x.end ? x.end.getTime() : Infinity) - (y.end ? y.end.getTime() : Infinity) || x.a.id.localeCompare(y.a.id);
+// QueueRules.pick: 점수 순(비면 마감 순)으로 줄 세워 size개까지, 같은 시리즈는 PER_PROGRAM개까지(taken은 이미 센 수). deferred의 활동은 맨 뒤로 미룬다
+function pickFrom(list, size, taken, deferred, empty, W) {
+  const sorted = [...list].sort((x, y) => (deferred.has(x.a.id) - deferred.has(y.a.id)) || (empty ? byDeadline(x, y) : (y.points - x.points || byDeadline(x, y))));
+  const per = { ...taken }; const picked = []; const dropped = [];
+  for (const r of sorted) {
+    per[r.a.program] = (per[r.a.program] || 0) + 1;
+    if (per[r.a.program] > W.PER_PROGRAM) { dropped.push([r.a, `같은 시리즈가 이미 ${W.PER_PROGRAM}개`]); continue; }
+    if (picked.length >= size) { dropped.push([r.a, `고르는 수 ${size}개를 넘었어요 (점수 ${r.points.toFixed(1)})`]); continue; }
+    picked.push(r);
+  }
+  return { picked, dropped };
+}
+
 function compute() {
   const W = state.weights;
   const now = new Date(state.today + "T12:00:00+09:00");
@@ -379,6 +507,8 @@ function compute() {
   const parentOf = (id) => { const p = orgs[id]?.parent; return p && orgs[p] && !broad(p) ? orgs[p] : null; };
   const chain = (id) => { const out = []; let n = orgs[id]; let i = 0; while (n && i++ < 20) { out.push(n); n = n.parent ? orgs[n.parent] : null; } return out; };
   const acts = Object.fromEntries(state.acts.map((a) => [a.id, a]));
+  const followedPrograms = new Set(state.followPrograms || []);
+  const followedOrgs = new Set(state.followOrgs || []);
 
   // 내 활동은 활동마다 가장 강한 것 하나
   const strongest = {};
@@ -413,7 +543,7 @@ function compute() {
   state.less.forEach((l) => { if (l.tag.trim()) add(less, norm(l.tag), decay(l.days)); });
   const members = new Set(state.memberOrgs);
   const jobTerms = state.jobs.filter((j) => j.text.trim());
-  const empty = jobTerms.length === 0 && state.history.length === 0 && state.less.filter((l) => l.tag.trim()).length === 0 && members.size === 0;
+  const empty = jobTerms.length === 0 && state.history.length === 0 && state.less.filter((l) => l.tag.trim()).length === 0 && members.size === 0 && followedPrograms.size === 0 && followedOrgs.size === 0;
 
   const fieldInterest = (tag) => {
     const p = Math.max(0, ...jobTerms.filter((j) => matches(tag, j.text)).map((j) => Number(j.w)));
@@ -429,48 +559,67 @@ function compute() {
     return null;
   };
 
-  const results = []; const excluded = [];
+  // 후보: 모집이 끝나지 않았고 신청 · 관심 없어요 · 자격 안 됨 · 숨긴 시리즈가 아닌 활동
+  const gone = new Map(); const cands = [];
   for (const a of state.acts) {
     const endDate = a.end ? new Date(a.end + "T23:59:00+09:00") : null;
-    if (endDate && endDate < now) { excluded.push([a, "모집이 끝났어요"]); continue; }
-    if (excludedActs[a.id]) { excluded.push([a, excludedActs[a.id]]); continue; }
-    if (hiddenPrograms[a.program]) { excluded.push([a, "시리즈 숨기기를 남겼어요"]); continue; }
+    if (endDate && endDate < now) { gone.set(a.id, "모집이 끝났어요"); continue; }
+    if (excludedActs[a.id]) { gone.set(a.id, excludedActs[a.id]); continue; }
+    if (hiddenPrograms[a.program]) { gone.set(a.id, "시리즈 숨기기를 남겼어요"); continue; }
+    cands.push({ a, endDate });
+  }
 
+  // 내용 관심: 말뭉치 = 후보 + 기록에 쓰인 활동(모집이 끝난 것 포함)
+  const textOf = (a) => [a.name, a.program, tagsOf(a).join(" "), a.desc || "", orgs[a.org]?.name || ""].join("\n");
+  const corpus = [...cands.map((c) => c.a), ...events.map((h) => acts[h.act])].map((a) => ({ id: a.id, text: textOf(a) }));
+  const historyWeights = events.map((h) => [h.act, W[HISTORY_KINDS[h.kind][1]] * decay(h.days)]);
+  const profile = new Map();
+  for (const j of jobTerms) for (const t of tokenize(j.text)) profile.set(t.term, Math.max(profile.get(t.term) ?? -Infinity, Number(j.w)));
+  const cm = buildContent(corpus, historyWeights, profile, W);
+
+  const results = [];
+  for (const { a, endDate } of cands) {
     const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1] - x[1]);
     const field = fields.length ? fields[0][1] : 0;
     const kind = squash(kindH[a.kind] || 0);
     const member = membership(a.org);
+    const followProgram = followedPrograms.has(a.program);
+    const followOrg = a.org && followedOrgs.has(a.org) ? orgs[a.org] : null;
     const atOrg = a.org ? squash(orgH[a.org] || 0) : 0;
     const parent = a.org ? parentOf(a.org) : null;
     const atParent = parent ? squash(orgH[parent.id] || 0) : 0;
-    const program = squash(programH[a.program] || 0);
+    const program = followProgram ? W.FOLLOWED_PROGRAM : squash(programH[a.program] || 0);
     const hist = Math.max(atOrg, atParent);
-    const positive = Math.max(member ? member[1] : 0, Math.max(0, hist)) + Math.max(0, program);
+    const positive = Math.max(member ? member[1] : 0, followOrg ? W.FOLLOWED_ORGANIZATION : 0, Math.max(0, hist)) + Math.max(0, program);
     const orgScore = Math.min(1, Math.max(-1, positive + Math.min(0, hist) + Math.min(0, program)));
     let orgReason = null;
-    if (relation[a.program] && program > 0) orgReason = RELATION_REASONS[relation[a.program]];
+    if (followProgram) orgReason = `팔로우한 ${a.program}`;
+    else if (relation[a.program] && program > 0) orgReason = RELATION_REASONS[relation[a.program]];
+    else if (followOrg) orgReason = `팔로우한 ${followOrg.name}`;
     else if (member) orgReason = `내 소속 ${member[0]}`;
     else if (atOrg >= W.REASON_THRESHOLD) orgReason = `${orgs[a.org]?.name}에 관심을 보였어요`;
     else if (atParent >= W.REASON_THRESHOLD && parent) orgReason = `같은 ${parent.name} 그룹`;
 
+    const content = empty ? 0 : cm.score(a.id);
+    const fieldReasons = fields.filter(([t, v]) => v >= W.REASON_THRESHOLD && !(norm(t) in less)).map(([t]) => t);
+    let contentReason = null;
+    if (content >= W.CONTENT_THRESHOLD) {
+      const shown = new Set(fieldReasons.map(norm));
+      const words = cm.topWords(a.id).filter((w) => !shown.has(norm(w))).slice(0, 2);
+      if (words.length) contentReason = words.join("·");
+    }
     const daysLeft = endDate ? (endDate - now) / 86400000 : null;
     const near = daysLeft !== null && daysLeft >= 0 && daysLeft <= W.DEADLINE_DAYS;
-    const interests = [orgReason, ...fields.filter(([t, v]) => v >= W.REASON_THRESHOLD && !(norm(t) in less)).map(([t]) => t), kind >= W.REASON_THRESHOLD ? KINDS[a.kind] : null].filter(Boolean);
+    const interests = [orgReason, ...fieldReasons, contentReason, kind >= W.REASON_THRESHOLD ? KINDS[a.kind] : null].filter(Boolean);
     const reasons = [...interests.slice(0, 2), ...(near ? [`${endDate.getMonth() + 1}월 ${endDate.getDate()}일 마감`] : [])];
     const lessV = Math.min(1, tagsOf(a).reduce((s, t) => s + (less[norm(t)] || 0), 0));
-    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV };
-    const points = parts.field + parts.kind + parts.org + parts.deadline + parts.less;
-    results.push({ a, points, parts, reasons, end: endDate, raw: { field, kind, orgScore } });
+    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, content: W.CONTENT_POINTS * content, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV };
+    const points = parts.field + parts.kind + parts.org + parts.content + parts.deadline + parts.less;
+    results.push({ a, points, parts, reasons, end: endDate, raw: { field, kind, orgScore, content } });
   }
-  const byDeadline = (x, y) => (x.end ? x.end.getTime() : Infinity) - (y.end ? y.end.getTime() : Infinity) || x.a.id.localeCompare(y.a.id);
   results.sort(empty ? byDeadline : (x, y) => y.points - x.points || byDeadline(x, y));
-  const per = {}; const picks = [];
-  for (const r of results) {
-    per[r.a.program] = (per[r.a.program] || 0) + 1;
-    if (per[r.a.program] > W.PER_PROGRAM) { excluded.push([r.a, `같은 시리즈가 이미 ${W.PER_PROGRAM}개`]); continue; }
-    if (picks.length >= W.SIZE) { excluded.push([r.a, `고르는 수 ${W.SIZE}개를 넘었어요 (점수 ${r.points.toFixed(1)})`]); continue; }
-    picks.push(r);
-  }
+  const { picked, dropped } = pickFrom(results, W.SIZE, {}, new Set(), empty, W);
+  const excluded = [...gone].map(([id, why]) => [acts[id], why]).concat(dropped);
   const interest = {
     field: Object.fromEntries(Object.entries(fieldH).map(([k, v]) => [k, squash(v)])),
     kind: Object.fromEntries(Object.entries(kindH).map(([k, v]) => [k, squash(v)])),
@@ -479,7 +628,8 @@ function compute() {
     less: { ...less },
   };
   const scores = Object.fromEntries(results.map((r) => [r.a.id, r.points]));
-  return { picks, excluded, empty, candidates: results.length, interest, scores, ranked: results.map((r) => r.a.id) };
+  const userTop = [...cm.user].sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 10);
+  return { picks: picked, excluded, empty, candidates: results.length, interest, scores, ranked: results.map((r) => r.a.id), results, gone: new Set(gone.keys()), userTop, corpusSize: cm.size, vocabulary: cm.vocabulary };
 }
 
 // 화면
@@ -492,6 +642,10 @@ function renderInputs() {
     <label for="job-t-${i}">낱말<input id="job-t-${i}" data-k="jobs.${i}.text" value="${esc(j.text)}"></label>
     <label for="job-w-${i}">무게<select id="job-w-${i}" data-k="jobs.${i}.w" data-num>${JOB_PRESETS.map(([n, w]) => `<option value="${w}"${Number(j.w) === w ? " selected" : ""}>${n} ${w}</option>`).join("")}</select></label>
     <button type="button" class="icon" data-del="jobs.${i}" aria-label="낱말 지우기">✕</button></div>`).join("");
+  const progs = [...new Set(state.acts.map((a) => a.program).filter(Boolean))];
+  const fp = state.followPrograms || [], fo = state.followOrgs || [];
+  $("follow-programs").innerHTML = progs.map((p) => `<button type="button" class="chip ${fp.includes(p) ? "" : "muted"}" data-follow-prog="${esc(p)}" aria-pressed="${fp.includes(p)}">${esc(p)}</button>`).join("");
+  $("follow-orgs").innerHTML = state.orgs.map((o) => `<button type="button" class="chip ${fo.includes(o.id) ? "" : "muted"}" data-follow-org="${esc(o.id)}" aria-pressed="${fo.includes(o.id)}">${esc(o.name)}</button>`).join("");
   $("member-orgs").innerHTML = state.orgs.map((o) => `<button type="button" class="chip ${state.memberOrgs.includes(o.id) ? "" : "muted"}" data-member="${esc(o.id)}" aria-pressed="${state.memberOrgs.includes(o.id)}">${esc(o.name)}</button>`).join("");
   $("history").innerHTML = state.history.map((h, i) => `<div class="row hist">
     <label for="h-a-${i}">활동<select id="h-a-${i}" data-k="history.${i}.act">${actOptions(h.act)}</select></label>
@@ -504,10 +658,11 @@ function renderInputs() {
     <button type="button" class="icon" data-del="less.${i}" aria-label="분야 지우기">✕</button></div>`).join("");
   $("weights").innerHTML = Object.entries(DEFAULT_WEIGHTS).map(([k, [def, n]]) => `<label for="w-${k}">${n}${state.weights[k] !== def ? ` <span class="chip warn">기본 ${def}</span>` : ""}<input id="w-${k}" type="number" step="any" data-k="weights.${k}" data-num value="${state.weights[k]}"></label>`).join("");
   $("acts").innerHTML = state.acts.map((a, i) => `<tr>
-    <td><input aria-label="활동 이름" data-k="acts.${i}.name" value="${esc(a.name)}"></td>
-    <td><input aria-label="시리즈" data-k="acts.${i}.program" value="${esc(a.program)}"></td>
+    <td><input id="act-${i}-name" aria-label="활동 이름" data-k="acts.${i}.name" value="${esc(a.name)}"></td>
+    <td><input id="act-${i}-program" aria-label="시리즈" data-k="acts.${i}.program" value="${esc(a.program)}"></td>
     <td><select aria-label="종류" data-k="acts.${i}.kind">${Object.entries(KINDS).map(([k, n]) => `<option value="${k}"${k === a.kind ? " selected" : ""}>${n}</option>`).join("")}</select></td>
     <td><input aria-label="분야" data-k="acts.${i}.tags" value="${esc(a.tags)}"></td>
+    <td class="desc"><textarea rows="3" aria-label="소개" data-k="acts.${i}.desc">${esc(a.desc)}</textarea></td>
     <td><select aria-label="여는 조직" data-k="acts.${i}.org">${orgOptions(a.org)}</select></td>
     <td><input aria-label="마감" type="date" data-k="acts.${i}.end" value="${esc(a.end)}"></td>
     <td><input aria-label="필수 자격" data-k="acts.${i}.elig" value="${esc(a.elig)}" placeholder="예: 대학생"></td>
@@ -525,7 +680,7 @@ function renderResult() {
   $("meta").innerHTML = `<span>후보 <b>${r.candidates}</b>개</span><span>고른 수 <b>${r.picks.length}</b>개</span><span>빠짐 <b>${r.excluded.length}</b>개</span>`;
   const max = Math.max(1, ...r.picks.map((p) => Object.values(p.parts).filter((v) => v > 0).reduce((s, v) => s + v, 0)));
   $("picks").innerHTML = r.picks.map((p, i) => {
-    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["deadline", "--bar-deadline", "마감"]];
+    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["content", "--bar-content", "내용"], ["deadline", "--bar-deadline", "마감"]];
     const bar = seg.filter(([k]) => p.parts[k] > 0).map(([k, c]) => `<span style="width:${(p.parts[k] / max) * 100}%;background:var(${c})"></span>`).join("");
     const legend = [...seg, ["less", "--bar-less", "덜 보기"]].filter(([k]) => Math.abs(p.parts[k]) > 0.05).map(([k, c, n]) => `<span><i style="background:var(${c})"></i>${n} ${fmt(p.parts[k])}</span>`).join("");
     const org = state.orgs.find((o) => o.id === p.a.org)?.name;
@@ -552,7 +707,45 @@ function update(full) { save(); if (full) renderInputs(); renderResult(); render
 // 동작 추적
 const ACT_NAMES = { LIKE: "관심 있어요", UNLIKE: "관심 있어요 취소", OPEN_DETAIL: "자세히", APPLIED: "신청", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
 const ADVANCES = new Set(["LIKE", "APPLIED", "COMPLETE", "SKIP_EARLY", "DISMISS", "LESS_FIELD", "HIDE_PROGRAM", "INELIGIBLE"]);
-function ensureTrace() { state.trace ||= []; state.seen ||= []; }
+function ensureTrace() { state.trace ||= []; state.placed ||= []; }
+// 받은 묶음은 자리마다 하나씩 쌓인다({uid, act, reasons(받을 때 지은 글), bundle, seen}). 같은 활동은 마지막 자리 하나만 보인다.
+// 동작이 하나도 없으면 첫 묶음을 지금 값으로 다시 만들고(계산기를 고치면 따라 바뀜), 동작이 생기면 받은 묶음을 고정한다
+function ensureBundle(r) {
+  ensureTrace();
+  if (state.trace.length) return;
+  const W = state.weights;
+  state.placed = pickFrom(r.results, W.SIZE, {}, new Set(), r.empty, W).picked.map((x) => ({ uid: rid(), act: x.a.id, reasons: x.reasons, bundle: 1, seen: false }));
+}
+function queueOf(r) {
+  ensureBundle(r);
+  const last = new Map(); state.placed.forEach((p, i) => last.set(p.act, i));
+  return [...last.values()].sort((x, y) => x - y).map((i) => state.placed[i]).filter((p) => !r.gone.has(p.act) && state.acts.some((a) => a.id === p.act));
+}
+const bundleCount = () => Math.max(1, ...state.placed.map((p) => p.bundle));
+// 다음 묶음(POST /v1/discover/queue/refill): 아직 받지 않은 후보를 점수 순으로, 모자라면 지금 신호로 다시 점수 매겨 채우고 바로 앞 묶음은 맨 뒤로
+function refill() {
+  ensureTrace();
+  const r = compute(); ensureBundle(r);
+  const W = state.weights;
+  const acts = Object.fromEntries(state.acts.map((a) => [a.id, a]));
+  const received = new Set(state.placed.map((p) => p.act));
+  const lastBundle = Math.max(0, ...state.placed.map((p) => p.bundle));
+  const count = (list, seed = {}) => { const c = { ...seed }; list.forEach((x) => { c[x.a.program] = (c[x.a.program] || 0) + 1; }); return c; };
+  const taken = count([...received].filter((id) => acts[id]).map((id) => ({ a: acts[id] })));
+  const fresh = pickFrom(r.results.filter((x) => !received.has(x.a.id)), W.SIZE, taken, new Set(), r.empty, W).picked;
+  let again = [];
+  if (fresh.length < W.SIZE) {
+    const chosen = new Set(fresh.map((x) => x.a.id));
+    const deferred = new Set(state.placed.filter((p) => p.bundle === lastBundle).map((p) => p.act));
+    again = pickFrom(r.results.filter((x) => !chosen.has(x.a.id)), W.SIZE - fresh.length, count(fresh), deferred, r.empty, W).picked;
+  }
+  const bundle = lastBundle + 1;
+  const items = [...fresh, ...again].map((x) => ({ uid: rid(), act: x.a.id, reasons: x.reasons, bundle, seen: false }));
+  const entry = { uid: "b" + rid(), kind: "NEXT", name: items.length ? `${bundle}번째 묶음 만듦 (새 후보 ${fresh.length}개 · 다시 넣기 ${again.length}개)` : "다음 묶음: 고를 활동이 없어 붙인 것이 없어요", added: [], removed: [], advanced: false, bundleMark: true, placedUids: items.map((p) => p.uid), diff: { interest: [], scores: [] } };
+  state.placed.push(...items);
+  state.trace.push(entry);
+  update(true);
+}
 function tagLabel(normKey) {
   for (const a of state.acts) for (const t of tagsOf(a)) if (norm(t) === normKey) return t;
   for (const l of state.less) if (norm(l.tag) === normKey) return l.tag;
@@ -562,7 +755,10 @@ const orgName = (id) => state.orgs.find((o) => o.id === id)?.name || id;
 const TYPE_NAMES = { field: "분야", kind: "종류", program: "시리즈", org: "조직", less: "덜 보기" };
 const labelOf = (type, key) => type === "field" || type === "less" ? tagLabel(key) : type === "kind" ? KINDS[key] : type === "org" ? orgName(key) : key;
 
-function currentCard(r) { ensureTrace(); return r.picks.find((p) => !state.seen.includes(p.a.id)) || null; }
+function currentCard(r) {
+  const pl = queueOf(r).find((p) => !p.seen);
+  return pl ? { pl, a: state.acts.find((a) => a.id === pl.act) } : null;
+}
 
 function doAction(kind) {
   ensureTrace();
@@ -570,7 +766,7 @@ function doAction(kind) {
   const card = currentCard(before);
   if (!card) return;
   const a = card.a;
-  const uid = Math.random().toString(36).slice(2, 9);
+  const uid = rid();
   const entry = { uid, act: a.id, kind, name: a.name, added: [], removed: [], advanced: false };
   const hasLike = state.history.some((h) => h.act === a.id && h.kind === "LIKE");
   if (kind === "LIKE" && hasLike) {
@@ -588,7 +784,7 @@ function doAction(kind) {
     const item = { act: a.id, kind, days: 0, uid };
     state.history.push(item); entry.added.push(["history", item]);
   }
-  if (ADVANCES.has(kind)) { state.seen.push(a.id); entry.advanced = true; }
+  if (ADVANCES.has(entry.kind)) { card.pl.seen = true; entry.plUid = card.pl.uid; entry.advanced = true; }
   const after = compute();
   entry.diff = diffOf(before, after);
   state.trace.push(entry);
@@ -598,10 +794,10 @@ function doAction(kind) {
 function undoAction() {
   ensureTrace();
   const e = state.trace.pop(); if (!e) return;
-  if (e.bundleMark) { state.bundle = Math.max(1, (state.bundle || 2) - 1); state.seen = state.trace.filter((x) => x.advanced && !x.bundleMark && state.trace.lastIndexOf(state.trace.filter((y) => y.bundleMark).at(-1)) < state.trace.indexOf(x)).map((x) => x.act); return update(true); }
+  if (e.bundleMark) { state.placed = state.placed.filter((p) => !e.placedUids.includes(p.uid)); return update(true); }
   e.added.forEach(([list, item]) => { state[list] = state[list].filter((x) => x.uid !== item.uid); });
   e.removed.forEach((h) => state.history.push(h));
-  if (e.advanced) state.seen = state.seen.filter((id) => id !== e.act);
+  if (e.advanced) { const p = state.placed.find((x) => x.uid === e.plUid); if (p) p.seen = false; }
   update(true);
 }
 
@@ -632,9 +828,10 @@ function renderTrace() {
   if ($("view-trace").hidden) return;
   ensureTrace();
   const r = compute();
+  const queue = queueOf(r);
   const card = currentCard(r);
-  const shown = r.picks.filter((p) => !state.seen.includes(p.a.id)).length;
-  $("trace-pos").textContent = `${state.bundle || 1}번째 묶음 · ` + (card ? `${r.picks.length - shown + 1} / ${r.picks.length}` : "다 봤어요");
+  const seenCount = queue.filter((p) => p.seen).length;
+  $("trace-pos").textContent = `${bundleCount()}번째 묶음 · ` + (card ? `${seenCount + 1} / ${queue.length}` : `${seenCount} / ${queue.length} 다 봤어요`);
   if (card) {
     const liked = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE");
     const org = state.orgs.find((o) => o.id === card.a.org)?.name;
@@ -643,7 +840,7 @@ function renderTrace() {
       <div class="p-kind">${esc(KINDS[card.a.kind])} · ${esc(card.a.program)}</div>
       <div class="p-name">${esc(card.a.name)}</div>
       <div class="p-sub">${org ? esc(org) + " · " : ""}${card.a.end ? esc(card.a.end) + " 마감" : ""} · 분야 ${esc(tagsOf(card.a).join(", ") || "없음")}</div>
-      <div class="chips">${card.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>`;
+      <div class="chips">${card.pl.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>`;
   } else {
     $("phone").className = "phone done";
     $("phone").innerHTML = `<div class="p-name">오늘 고른 활동을 다 봤어요</div><div class="p-sub">"다음 묶음 만들기"로 지금까지의 동작을 반영한 새 묶음을 받아요.</div>`;
@@ -684,7 +881,13 @@ function renderTrace() {
     return `<div class="irow"><span class="itype">${TYPE_NAMES[type]}</span><span>${esc(labelOf(type, k))}</span><span class="ibar" aria-hidden="true"><span style="left:${left}%;width:${width}%;background:var(${v >= 0 ? "--accent" : "--bad"})"></span></span><span class="ival ${cls(v)}">${sgn(v)}</span></div>`;
   }).join("")}</div><p class="hint">직무 낱말로 생기는 분야 관심은 활동마다 따로 더해져 여기에는 나오지 않아요. 기록과 반응에서 생긴 관심만 보여요.</p>` : `<p class="empty">기록과 반응이 없어요.</p>`;
 
-  $("trace-log").innerHTML = state.trace.map((e) => e.bundleMark ? `<li><b>${esc(e.name)} 만듦</b></li>` : `<li>${esc(e.name)} · ${esc(ACT_NAMES[e.kind])}${e.tag ? ` (${esc(e.tag)})` : ""} — 관심 ${e.diff.interest.length}개, 점수 ${e.diff.scores.length}개 바뀜</li>`).join("") || `<li class="empty" style="list-style:none">아직 동작이 없어요.</li>`;
+  const top = r.userTop; const vmax = Math.max(1e-9, ...top.map(([, v]) => Math.abs(v)));
+  $("trace-vector").innerHTML = top.length ? `<div class="ilist">${top.map(([t, v], i) => {
+    const w = Math.abs(v) / vmax * 50;
+    return `<div class="irow"><span class="itype">${i + 1}위</span><span>${esc(t)}</span><span class="ibar" aria-hidden="true"><span style="left:${v >= 0 ? 50 : 50 - w}%;width:${w}%;background:var(${v >= 0 ? "--bar-content" : "--bad"})"></span></span><span class="ival ${cls(v)}">${sgn(v)}</span></div>`;
+  }).join("")}</div><p class="hint">말뭉치 문서 ${r.corpusSize}개 · 낱말 ${r.vocabulary}종. u는 L2 정규화돼 있어 값의 제곱합이 1이에요. 음수는 관심 없어요 · 일찍 넘김 · 신청 취소로 밀린 낱말입니다.</p>` : `<p class="empty">직무 낱말도 기록도 없어 u가 0 벡터예요(내용 관심은 모두 0).</p>`;
+
+  $("trace-log").innerHTML = state.trace.map((e) => e.bundleMark ? `<li><b>${esc(e.name)}</b></li>` : `<li>${esc(e.name)} · ${esc(ACT_NAMES[e.kind])}${e.tag ? ` (${esc(e.tag)})` : ""} — 관심 ${e.diff.interest.length}개, 점수 ${e.diff.scores.length}개 바뀜</li>`).join("") || `<li class="empty" style="list-style:none">아직 동작이 없어요.</li>`;
 }
 
 function showView(v) {
@@ -699,10 +902,12 @@ document.addEventListener("input", (e) => {
   const el = e.target;
   if (el.id === "today") { if (el.value) state.today = el.value; return update(false); }
   if (!el.dataset.k) return;
+  const renamed = /^acts\.(\d+)\.program$/.exec(el.dataset.k);
+  if (renamed && state.followPrograms) { const old = state.acts[renamed[1]].program; state.followPrograms = state.followPrograms.map((x) => (x === old ? el.value : x)); }
   setPath(el.dataset.k, el.hasAttribute("data-num") ? Number(el.value) : el.value);
-  const structural = /^(orgs\.\d+\.name|acts\.\d+\.name)$/.test(el.dataset.k);
+  const structural = /^(orgs\.\d+\.name|acts\.\d+\.(name|program))$/.test(el.dataset.k);
   update(false);
-  if (structural) { const f = document.activeElement?.id; renderInputs(); if (f) $(f)?.focus(); }
+  if (structural) { const f = document.activeElement?.id; renderInputs(); const n = f && $(f); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch {} } }
 });
 document.addEventListener("change", (e) => { if (e.target.tagName === "SELECT" && e.target.dataset.k && e.target.dataset.k.startsWith("weights")) renderInputs(); });
 document.addEventListener("click", (e) => {
@@ -710,18 +915,20 @@ document.addEventListener("click", (e) => {
   if (t.dataset.view) return showView(t.dataset.view);
   if (t.dataset.act) return doAction(t.dataset.act);
   if (t.id === "trace-undo") return undoAction();
-  if (t.id === "trace-next") { ensureTrace(); state.seen = []; state.bundle = (state.bundle || 1) + 1; state.trace.push({ uid: "b" + state.bundle, kind: "NEXT", name: `${state.bundle}번째 묶음`, added: [], removed: [], advanced: false, bundleMark: true, diff: { interest: [], scores: [] } }); return update(true); }
-  if (t.id === "trace-clear") { ensureTrace(); while (state.trace.length) { const e2 = state.trace.pop(); e2.added.forEach(([list, item]) => { state[list] = state[list].filter((x) => x.uid !== item.uid); }); e2.removed.forEach((h) => state.history.push(h)); } state.seen = []; state.bundle = 1; return update(true); }
+  if (t.id === "trace-next") return refill();
+  if (t.id === "trace-clear") { ensureTrace(); while (state.trace.length) { const e2 = state.trace.pop(); e2.added.forEach(([list, item]) => { state[list] = state[list].filter((x) => x.uid !== item.uid); }); e2.removed.forEach((h) => state.history.push(h)); } state.placed = []; return update(true); }
   if (t.dataset.del) { const [list, i] = t.dataset.del.split("."); const removed = state[list].splice(Number(i), 1)[0];
     if (list === "acts") state.history = state.history.filter((h) => h.act !== removed.id);
-    if (list === "orgs") { state.memberOrgs = state.memberOrgs.filter((m) => m !== removed.id); state.acts.forEach((a) => { if (a.org === removed.id) a.org = ""; }); state.orgs.forEach((o) => { if (o.parent === removed.id) o.parent = ""; }); }
+    if (list === "orgs") { state.memberOrgs = state.memberOrgs.filter((m) => m !== removed.id); state.followOrgs = (state.followOrgs || []).filter((m) => m !== removed.id); state.acts.forEach((a) => { if (a.org === removed.id) a.org = ""; }); state.orgs.forEach((o) => { if (o.parent === removed.id) o.parent = ""; }); }
     return update(true); }
+  if (t.dataset.followProg) { const p = t.dataset.followProg; const f = state.followPrograms || []; state.followPrograms = f.includes(p) ? f.filter((x) => x !== p) : [...f, p]; return update(true); }
+  if (t.dataset.followOrg) { const o = t.dataset.followOrg; const f = state.followOrgs || []; state.followOrgs = f.includes(o) ? f.filter((x) => x !== o) : [...f, o]; return update(true); }
   if (t.dataset.member) { const id = t.dataset.member; state.memberOrgs = state.memberOrgs.includes(id) ? state.memberOrgs.filter((m) => m !== id) : [...state.memberOrgs, id]; return update(true); }
   const id = () => Math.random().toString(36).slice(2, 8);
   if (t.id === "add-job") { state.jobs.push({ text: "", w: 1.0 }); return update(true); }
   if (t.id === "add-hist" && state.acts.length) { state.history.push({ act: state.acts[0].id, kind: "LIKE", days: 0 }); return update(true); }
   if (t.id === "add-less") { state.less.push({ tag: "", days: 0 }); return update(true); }
-  if (t.id === "add-act") { state.acts.push({ id: "a" + id(), name: "새 활동", program: "새 시리즈", kind: "MEETUP", tags: "", org: "", end: state.today, elig: "" }); return update(true); }
+  if (t.id === "add-act") { state.acts.push({ id: "a" + id(), name: "새 활동", program: "새 시리즈", kind: "MEETUP", tags: "", desc: "", org: "", end: state.today, elig: "" }); return update(true); }
   if (t.id === "add-org") { state.orgs.push({ id: "o-" + id(), name: "새 조직", parent: "" }); return update(true); }
   if (t.id === "reset") { state = structuredClone(EXAMPLE); return update(true); }
 });
@@ -733,6 +940,5 @@ try { startView = localStorage.getItem("queue-lab-view") || (location.hash === "
 if (location.hash === "#trace") startView = "trace";
 showView(startView);
 </script>
-
 </body>
 </html>
