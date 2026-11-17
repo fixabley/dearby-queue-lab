@@ -240,7 +240,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <div class="rows" id="less"></div>
         <button type="button" id="add-less" class="icon">+ 분야</button>
       </details>
-      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 관심 있어요면 "관심 표시한 시리즈"가 이유입니다. 신청한 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다. 찜·캘린더에만·지금 상태는 계약에 없어 쓰지 않습니다(찜은 관심 있어요로, 자격은 자격 안 됨 반응으로).</p>
+      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 찜이면 "찜한 시리즈"가 이유입니다. 신청한 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다. 캘린더에만·지금 상태는 쓰지 않습니다. 찜이 관심 신호(0.4)이고, 자격은 자격 안 됨 반응으로 받습니다.</p>
     </section>
 
     <section class="panel" aria-labelledby="h-weights">
@@ -277,7 +277,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <p class="hint">점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 15 × 내용 관심 + 5 × (14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필·기록·팔로우가 모두 비면 마감 순이고 내용 관심은 쓰지 않습니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
         <p class="hint">조직·시리즈 관심 = clamp(max(소속, 조직 팔로우, max(기록의 조직, 0)) + max(시리즈, 0) + min(기록의 조직, 0) + min(시리즈, 0), −1, 1). 팔로우한 시리즈는 시리즈 관심 1.0.</p>
         <p class="hint">내용 관심 = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 사용자 벡터에 가장 크게 보탠 근거가 이유가 됩니다. 기록 활동 하나(그 활동이 u에 더한 배수 × 그 활동 벡터 · d)와 직무 하나(p 가운데 그 직무의 낱말만 · d) 가운데 큰 쪽(같으면 기록)이 "신청한 ○○와 비슷해요"·"희망 직무 '…'와 맞아요"가 되고, 정하지 못하면 u·d가 큰 낱말 둘입니다.</p>
-        <p class="hint">이유 규칙(근거형): 점수·문턱·차례·개수(관심 이유 둘 + 마감 하나)는 그대로고 글만 근거를 보입니다. 분야 이유는 직무 쪽(프로필) ≥ 기록 쪽이면 "희망 직무 '…'와 맞아요"·"현직업 '…'와 맞아요", 아니면 그 분야가 붙은 근거 기록 가운데 가장 무거운 것으로 "관심 표시한 ○○와 비슷해요"·"신청한 ○○와 비슷해요", 근거가 없으면 맞은 직무, 아니면 분야 이름입니다. 종류 이유도 같은 종류의 가장 무거운 근거 기록, 없으면 종류 이름입니다. 근거 기록은 관심 있어요·신청·확정된 신청만(약한 신호와 부정 기록은 안 써요)이고 그 후보 자신과 같은 시리즈의 기록은 뺍니다. 같은 글이 둘이면 하나로 셉니다. 활동 이름은 12자, 직무 이름은 10자를 넘으면 앞부분과 "…"로 줄이고, 마지막 글자 받침에 따라 와/과를 붙입니다.</p>
+        <p class="hint">이유 규칙(근거형): 점수·문턱·차례·개수(관심 이유 둘 + 마감 하나)는 그대로고 글만 근거를 보입니다. 분야 이유는 직무 쪽(프로필) ≥ 기록 쪽이면 "희망 직무 '…'와 맞아요"·"현직업 '…'와 맞아요", 아니면 그 분야가 붙은 근거 기록 가운데 가장 무거운 것으로 "찜한 ○○와 비슷해요"·"신청한 ○○와 비슷해요", 근거가 없으면 맞은 직무, 아니면 분야 이름입니다. 종류 이유도 같은 종류의 가장 무거운 근거 기록, 없으면 종류 이름입니다. 근거 기록은 찜·신청·확정된 신청만(약한 신호와 부정 기록은 안 써요)이고 그 후보 자신과 같은 시리즈의 기록은 뺍니다. 같은 글이 둘이면 하나로 셉니다. 활동 이름은 12자, 직무 이름은 10자를 넘으면 앞부분과 "…"로 줄이고, 마지막 글자 받침에 따라 와/과를 붙입니다.</p>
       </details>
     </section>
   </div>
@@ -301,7 +301,7 @@ const HISTORY_KINDS = {
 };
 const MY_ACTIVITY = ["PARTICIPATED", "APPLIED"];
 const STRENGTH = { PARTICIPATED: 2, APPLIED: 1 };
-const RELATION_REASONS = { CONFIRMED: "지난 기수에 참여했어요", APPLIED: "지난 기수에 신청했어요", LIKED: "관심 표시한 시리즈" };
+const RELATION_REASONS = { CONFIRMED: "지난 기수에 참여했어요", APPLIED: "지난 기수에 신청했어요", LIKED: "찜한 시리즈" };
 const RELATION_ORDER = ["CONFIRMED", "APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
   FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], CONTENT_POINTS: [15, "내용"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
@@ -519,7 +519,7 @@ function withParticle(name) {
   return fin ? "과" : "와";
 }
 const jobReason = (src) => { const n = shortened(src.name, MAX_JOB_NAME); return `${src.desired ? "희망 직무" : "현직업"} '${n}'${withParticle(n)} 맞아요`; };
-const similarReason = (e) => { const n = shortened(e.a.name || e.a.program, MAX_ACTIVITY_NAME); return `${e.rel === "LIKED" ? "관심 표시한" : "신청한"} ${n}${withParticle(n)} 비슷해요`; };
+const similarReason = (e) => { const n = shortened(e.a.name || e.a.program, MAX_ACTIVITY_NAME); return `${e.rel === "LIKED" ? "찜한" : "신청한"} ${n}${withParticle(n)} 비슷해요`; };
 // 직무 하나의 출처: 낱말 줄의 "고른 직무"(비면 낱말 자신)와 희망/현직업(무게 1.0 · 0.6은 희망, 0.7 · 0.4는 현직업)
 const jobSource = (j) => ({ name: (j.src || "").trim() || j.text.trim(), desired: Number(j.w) === 1.0 || Number(j.w) === 0.6 });
 
@@ -784,7 +784,7 @@ function setPath(path, value) {
 function update(full) { save(); if (full) renderInputs(); renderResult(); renderTrace(); }
 
 // 동작 추적
-const ACT_NAMES = { LIKE: "관심 있어요", UNLIKE: "관심 있어요 취소", OPEN_DETAIL: "자세히", APPLIED: "신청", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
+const ACT_NAMES = { LIKE: "찜", UNLIKE: "찜 취소", OPEN_DETAIL: "자세히", APPLIED: "신청", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
 const ADVANCES = new Set(["LIKE", "APPLIED", "COMPLETE", "SKIP_EARLY", "DISMISS", "LESS_FIELD", "HIDE_PROGRAM", "INELIGIBLE"]);
 function ensureTrace() { state.trace ||= []; state.placed ||= []; }
 // 받은 묶음은 자리마다 하나씩 쌓인다({uid, act, reasons(받을 때 지은 글), bundle, seen}). 같은 활동은 마지막 자리 하나만 보인다.
