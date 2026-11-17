@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dearby 맞춤 대기열 실험실</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 왼쪽은 입력(회원·기록·활동·가중치), 오른쪽은 결과(고른 순서와 점수 내역). 좁으면 위아래로 쌓는다 */
+:root {
+  --bg: #f5f6f4;
+  --panel: #ffffff;
+  --ink: #1d2321;
+  --muted: #5d6763;
+  --line: #dde2df;
+  --accent: #127a5c;
+  --accent-soft: #e2f2ec;
+  --warn: #a5541a;
+  --warn-soft: #fbeee3;
+  --bad: #b3322f;
+  --bar-field: #127a5c;
+  --bar-kind: #3f6fb5;
+  --bar-org: #8a5bb0;
+  --bar-deadline: #c08a1c;
+  --bar-less: #b3322f;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
+    --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
+    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
+  --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
+  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+header { max-width: 1280px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; }
+h1 { font-size: 22px; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+main { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.col { display: grid; gap: 16px; min-width: 0; }
+h2 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
+label { font-size: 12px; color: var(--muted); display: grid; gap: 3px; }
+input, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; min-width: 0; width: 100%; }
+input[type="number"] { font-family: var(--font-mono); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button { font: inherit; font-size: 13px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 5px 10px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+button.icon { padding: 2px 8px; color: var(--muted); }
+button:hover { border-color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.rows { display: grid; gap: 6px; }
+.row { display: grid; gap: 6px; align-items: end; }
+.row.job { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto; }
+.row.hist { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 70px auto; }
+.row.less { grid-template-columns: minmax(0, 2fr) 70px auto; }
+.row.org { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) auto; }
+@media (max-width: 520px) {
+  .row.job, .row.hist, .row.less, .row.org { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.chip.muted { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+details { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+details:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 2px 0; }
+.act-table { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+td input, td select { padding: 3px 5px; font-size: 12.5px; }
+.result-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+.result-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
+ol.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ol.picks li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; }
+.rank { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 1px; }
+.pick-name { font-weight: 600; }
+.pick-sub { color: var(--muted); font-size: 12px; }
+.score { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; text-align: right; }
+.score small { display: block; font-size: 11px; color: var(--muted); }
+.breakdown { grid-column: 2 / -1; display: grid; gap: 6px; }
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
+.excluded li { grid-template-columns: minmax(0, 1fr) auto; }
+.empty { color: var(--muted); padding: 12px 0; }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.tabs button { border: 0; border-radius: 0; background: var(--panel); }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--panel); }
+main.trace { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }
+@media (max-width: 900px) { main.trace { grid-template-columns: minmax(0, 1fr); } }
+.phone { aspect-ratio: 9 / 16; max-width: 100%; width: min(100%, 340px); margin: 0 auto; border-radius: 18px; overflow: hidden; background: var(--ink); color: var(--panel); display: flex; flex-direction: column; justify-content: flex-end; padding: 18px; position: relative; }
+.phone::before { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, var(--accent) 0%, var(--bar-kind) 55%, var(--bar-org) 100%); opacity: 0.55; }
+.phone > * { position: relative; }
+.phone .p-kind { font-size: 12px; opacity: 0.85; }
+.phone .p-name { font-size: 20px; font-weight: 700; line-height: 1.3; margin: 4px 0; text-wrap: balance; }
+.phone .p-sub { font-size: 12.5px; opacity: 0.85; }
+.phone .chips { margin-top: 10px; }
+.phone .chip { background: color-mix(in srgb, var(--panel) 22%, transparent); color: var(--panel); }
+.phone .liked { position: absolute; top: 14px; right: 16px; font-size: 13px; font-weight: 600; }
+.phone.done { justify-content: center; text-align: center; }
+.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; margin-top: 12px; }
+.actions button[data-act="DISMISS"], .actions button[data-act="LESS_FIELD"], .actions button[data-act="HIDE_PROGRAM"], .actions button[data-act="INELIGIBLE"], .actions button[data-act="SKIP_EARLY"] { color: var(--bad); }
+.trace-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.delta-table { overflow-x: auto; }
+.delta-table td.num, .delta-table th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.up { color: var(--accent); }
+.down { color: var(--bad); }
+.ilist { display: grid; gap: 4px; }
+.irow { display: grid; grid-template-columns: 74px minmax(0, 1fr) 120px 52px; gap: 8px; align-items: center; font-size: 12.5px; }
+.irow .ibar { height: 8px; background: var(--bg); border-radius: 4px; position: relative; overflow: hidden; }
+.irow .ibar span { position: absolute; top: 0; bottom: 0; }
+.irow .ibar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.irow .ival { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.irow .itype { color: var(--muted); font-size: 11.5px; }
+ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5px; }
+.sticky { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 900px) { .sticky { position: static; } }
+</style>
+</head>
+<body>
+
+
+<header>
+  <div>
+    <h1>Dearby 맞춤 대기열 실험실</h1>
+    <p>서버 PR #284의 점수 규칙(QueueRules)을 그대로 옮긴 계산기입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
+  </div>
+  <div class="head-actions">
+    <div class="tabs" role="tablist" aria-label="보기">
+      <button type="button" role="tab" id="tab-calc" data-view="calc" aria-selected="true">계산기</button>
+      <button type="button" role="tab" id="tab-trace" data-view="trace" aria-selected="false">동작 추적</button>
+    </div>
+    <button id="reset" type="button">예시로 되돌리기</button>
+  </div>
+</header>
+
+<main id="view-trace" class="trace" hidden>
+  <div class="col">
+    <section class="panel phone-wrap" aria-labelledby="h-phone">
+      <h2 id="h-phone">맞춤 대기열 <small id="trace-pos"></small></h2>
+      <div class="phone" id="phone"></div>
+      <div class="actions" id="trace-actions">
+        <button type="button" data-act="LIKE">관심 있어요</button>
+        <button type="button" data-act="OPEN_DETAIL">자세히</button>
+        <button type="button" data-act="BOOKMARKED">찜</button>
+        <button type="button" data-act="APPLIED">지원</button>
+        <button type="button" data-act="COMPLETE">끝까지 보고 넘김</button>
+        <button type="button" data-act="SKIP_EARLY">3초 안에 넘김</button>
+        <button type="button" data-act="DISMISS">관심 없어요</button>
+        <button type="button" data-act="LESS_FIELD">분야 덜 보기</button>
+        <button type="button" data-act="HIDE_PROGRAM">시리즈 숨기기</button>
+        <button type="button" data-act="INELIGIBLE">자격 안 됨</button>
+      </div>
+      <div class="trace-tools">
+        <button type="button" id="trace-next" class="primary">다음 묶음 만들기</button>
+        <button type="button" id="trace-undo">마지막 동작 되돌리기</button>
+        <button type="button" id="trace-clear">추적 처음부터</button>
+      </div>
+      <p class="hint">회원·후보·가중치는 "계산기" 보기의 값을 그대로 씁니다. 동작은 오늘(0일 전) 기록으로 더해집니다. 서버는 그날 받은 묶음을 고정하므로 순위 변화는 다음 묶음에 반영됩니다. "다음 묶음 만들기"는 몇 번이든 누를 수 있고, 지금까지의 동작을 반영해 새로 고릅니다(관심 없어요 · 자격 안 됨 · 숨긴 시리즈 · 찜 · 지원한 활동은 빠지고, 넘기기만 한 활동은 다시 나올 수 있어요).</p>
+    </section>
+  </div>
+  <div class="col">
+    <section class="panel" aria-labelledby="h-last" aria-live="polite">
+      <h2 id="h-last">방금 동작으로 바뀐 것</h2>
+      <div id="trace-last" class="empty">카드에서 동작을 누르면 여기에 관심과 순위의 변화가 나옵니다.</div>
+    </section>
+    <section class="panel" aria-labelledby="h-interest">
+      <h2 id="h-interest">지금의 관심 <small>−1~1, 기록 합을 맞춘 값</small></h2>
+      <div id="trace-interest"></div>
+    </section>
+    <section class="panel" aria-labelledby="h-log">
+      <h2 id="h-log">동작 기록</h2>
+      <ol class="log" id="trace-log"></ol>
+    </section>
+  </div>
+</main>
+
+<main id="view-calc">
+  <div class="col">
+    <section class="panel" aria-labelledby="h-member">
+      <h2 id="h-member">회원 <small>프로필에서 끌어낸 재료</small></h2>
+      <div class="grid2">
+        <label for="employment">지금 상태(자격 판정에만 씀)
+          <select id="employment">
+            <option value="">비움</option>
+            <option value="STUDENT">학생</option>
+            <option value="EMPLOYED">재직</option>
+            <option value="UNEMPLOYED">무직</option>
+          </select>
+        </label>
+        <label for="today">오늘(서울)
+          <input id="today" type="date">
+        </label>
+      </div>
+      <details open>
+        <summary>직무 낱말</summary>
+        <div class="rows" id="jobs"></div>
+        <button type="button" id="add-job" class="icon">+ 낱말</button>
+        <p class="hint">희망 직무의 이름·별칭은 1.0, 그 상위 분류는 0.6, 현직업 직무는 0.7, 그 상위는 0.4. 분야 태그와 공백·가운뎃점을 뺀 글자로 견주고, 두 글자 이상이면 한쪽이 다른 쪽에 들어도 맞습니다.</p>
+      </details>
+      <details open>
+        <summary>소속 조직</summary>
+        <div class="chips" id="member-orgs"></div>
+        <p class="hint">누르면 넣고 뺍니다. 같은 조직이면 1, 한쪽이 다른 쪽의 상위면 0.6(바로 아래 조직이 10곳 넘는 넓은 상위 조직은 빼요).</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-hist">
+      <h2 id="h-hist">활동 기록과 반응 <small>반감기를 거쳐 분야·종류·조직·시리즈에 더함</small></h2>
+      <div class="rows" id="history"></div>
+      <button type="button" id="add-hist" class="icon">+ 기록</button>
+      <details open>
+        <summary>분야 덜 보기</summary>
+        <div class="rows" id="less"></div>
+        <button type="button" id="add-less" class="icon">+ 분야</button>
+      </details>
+      <p class="hint">내 활동(참여·지원·찜·캘린더에만)은 활동마다 가장 강한 것 하나만 셉니다. 내 활동에 있는 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-weights">
+      <h2 id="h-weights">가중치 <small>서버 기본값에서 시작</small></h2>
+      <div class="grid2" id="weights"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-acts">
+      <h2 id="h-acts">후보 활동 <small>모집 중인 공개 활동</small></h2>
+      <div class="act-table"><table>
+        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>여는 조직</th><th>마감</th><th>필수 자격</th><th></th></tr></thead>
+        <tbody id="acts"></tbody>
+      </table></div>
+      <button type="button" id="add-act" class="icon">+ 활동</button>
+      <details>
+        <summary>조직 나무</summary>
+        <div class="rows" id="orgs"></div>
+        <button type="button" id="add-org" class="icon">+ 조직</button>
+      </details>
+    </section>
+  </div>
+
+  <div class="col sticky">
+    <section class="panel" aria-labelledby="h-result" aria-live="polite">
+      <h2 id="h-result">오늘의 맞춤 대기열 <small id="mode"></small></h2>
+      <div class="result-meta" id="meta"></div>
+      <ol class="picks" id="picks"></ol>
+      <details>
+        <summary id="excluded-title">후보에서 빠진 활동</summary>
+        <ol class="picks excluded" id="excluded"></ol>
+      </details>
+      <details>
+        <summary>점수 식</summary>
+        <p class="hint">점수 = 분야 × 분야 관심 + 종류 × 종류 관심 + 조직 × 조직·시리즈 관심 + (14일 안 마감이면 마감) − 덜 보기 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필과 기록이 모두 비면 마감 순입니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
+      </details>
+    </section>
+  </div>
+</main>
+
+<script>
+const KINDS = { BOOTCAMP: "부트캠프", CLUB: "동아리", CONTEST: "공모전", HACKATHON: "해커톤", STUDY: "스터디", CONFERENCE: "컨퍼런스", MEETUP: "밋업", LECTURE: "강연", WORKSHOP: "워크숍", OTHER: "기타" };
+const JOB_PRESETS = [["희망 직무", 1.0], ["희망 직무의 상위", 0.6], ["현직업", 0.7], ["현직업의 상위", 0.4]];
+const HISTORY_KINDS = {
+  PARTICIPATED: ["참여", "PARTICIPATED", "APPLIED"],
+  APPLIED: ["지원", "APPLIED", "APPLIED"],
+  BOOKMARKED: ["찜", "BOOKMARKED", "SAVED"],
+  CALENDAR_ONLY: ["캘린더에만", "CALENDAR_ONLY", "SAVED"],
+  LIKE: ["관심 있어요", "LIKE", "LIKED"],
+  COMPLETE: ["끝까지 봄", "COMPLETE", null],
+  OPEN_DETAIL: ["자세히 봄", "OPEN_DETAIL", null],
+  SKIP_EARLY: ["일찍 넘김", "SKIP_EARLY", null],
+  DISMISS: ["관심 없어요", "DISMISS", null],
+  REMOVE: ["내 활동에서 지움", "REMOVE", null],
+  INELIGIBLE: ["자격 안 됨", null, null],
+  HIDE_PROGRAM: ["시리즈 숨기기", null, null],
+};
+const MY_ACTIVITY = ["PARTICIPATED", "APPLIED", "BOOKMARKED", "CALENDAR_ONLY"];
+const STRENGTH = { PARTICIPATED: 4, APPLIED: 3, BOOKMARKED: 2, CALENDAR_ONLY: 1 };
+const RELATION_REASONS = { APPLIED: "지난 기수에 지원했어요", SAVED: "내 활동에 담았던 시리즈", LIKED: "관심 표시한 시리즈" };
+const RELATION_ORDER = ["APPLIED", "SAVED", "LIKED"];
+const DEFAULT_WEIGHTS = {
+  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
+  PARTICIPATED: [1.0, "기록: 참여"], APPLIED: [0.7, "기록: 지원"], BOOKMARKED: [0.5, "기록: 찜"], CALENDAR_ONLY: [0.3, "기록: 캘린더에만"],
+  LIKE: [0.4, "반응: 관심 있어요"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"], REMOVE: [-0.2, "반응: 내 활동에서 지움"],
+  HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], PER_PROGRAM: [2, "같은 시리즈 최대"], SIZE: [10, "고르는 수"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
+  MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
+};
+
+const EXAMPLE = {
+  today: "2026-11-17",
+  employment: "STUDENT",
+  jobs: [{ text: "데이터 사이언티스트", w: 1.0 }, { text: "데이터·AI", w: 0.6 }, { text: "백엔드", w: 0.7 }],
+  memberOrgs: ["o-snu-cse"],
+  orgs: [
+    { id: "o-snu", name: "서울대학교", parent: "" },
+    { id: "o-snu-cse", name: "서울대 컴퓨터공학부", parent: "o-snu" },
+    { id: "o-samsung", name: "삼성", parent: "" },
+    { id: "o-sds", name: "삼성SDS", parent: "o-samsung" },
+    { id: "o-ssafy", name: "SSAFY", parent: "o-samsung" },
+    { id: "o-naver", name: "네이버", parent: "" },
+    { id: "o-boost", name: "부스트캠프", parent: "o-naver" },
+    { id: "o-kakao", name: "카카오", parent: "" },
+    { id: "o-likelion", name: "멋쟁이사자처럼", parent: "" },
+    { id: "o-aws", name: "AWS 코리아", parent: "" },
+    { id: "o-nipa", name: "정보통신산업진흥원", parent: "" },
+  ],
+  acts: [
+    { id: "a1", name: "부스트캠프 웹·모바일 11기", program: "부스트캠프 웹·모바일", kind: "BOOTCAMP", tags: "백엔드, 프론트엔드", org: "o-boost", end: "2026-11-24", elig: "" },
+    { id: "a2", name: "부스트캠프 AI Tech 9기", program: "부스트캠프 AI Tech", kind: "BOOTCAMP", tags: "데이터·AI, 머신러닝", org: "o-boost", end: "2026-11-28", elig: "" },
+    { id: "a3", name: "SSAFY 15기", program: "SSAFY", kind: "BOOTCAMP", tags: "백엔드, 소프트웨어 개발", org: "o-ssafy", end: "2026-12-05", elig: "미취업자" },
+    { id: "a4", name: "AWS 클라우드 컨퍼런스 2026", program: "AWS 클라우드 컨퍼런스", kind: "CONFERENCE", tags: "클라우드, 백엔드", org: "o-aws", end: "2026-11-20", elig: "" },
+    { id: "a5", name: "카카오 데이터 분석 공모전", program: "카카오 데이터 공모전", kind: "CONTEST", tags: "데이터·AI, 데이터 분석", org: "o-kakao", end: "2026-12-20", elig: "대학생" },
+    { id: "a6", name: "멋사 대학 14기 운영진", program: "멋쟁이사자처럼 대학", kind: "CLUB", tags: "프론트엔드, 기획", org: "o-likelion", end: "2026-11-19", elig: "재학생" },
+    { id: "a7", name: "삼성SDS 클라우드 해커톤", program: "SDS 해커톤", kind: "HACKATHON", tags: "클라우드, 데이터·AI", org: "o-sds", end: "2026-12-01", elig: "재직자" },
+    { id: "a8", name: "서울대 AI 세미나 겨울", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI, 머신러닝", org: "o-snu-cse", end: "2026-12-10", elig: "" },
+    { id: "a9", name: "서울대 AI 세미나 특강", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI", org: "o-snu-cse", end: "2026-11-30", elig: "" },
+    { id: "a10", name: "서울대 AI 세미나 워크숍", program: "서울대 AI 세미나", kind: "WORKSHOP", tags: "데이터·AI", org: "o-snu-cse", end: "2026-11-26", elig: "" },
+    { id: "a11", name: "UX 디자인 스터디 3기", program: "UX 디자인 스터디", kind: "STUDY", tags: "디자인, UX", org: "", end: "2026-11-22", elig: "" },
+    { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", org: "o-nipa", end: "2027-01-15", elig: "미취업청년" },
+  ],
+  history: [
+    { act: "a2", kind: "BOOKMARKED", days: 30 },
+    { act: "a4", kind: "COMPLETE", days: 2 },
+    { act: "a11", kind: "DISMISS", days: 5 },
+  ],
+  less: [{ tag: "기획", days: 3 }],
+  weights: Object.fromEntries(Object.entries(DEFAULT_WEIGHTS).map(([k, v]) => [k, v[0]])),
+};
+
+let state = load() || structuredClone(EXAMPLE);
+function load() { try { const s = localStorage.getItem("queue-lab"); return s ? JSON.parse(s) : null; } catch { return null; } }
+function save() { try { localStorage.setItem("queue-lab", JSON.stringify(state)); } catch {} }
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const IGNORED = /[\s·ㆍ・.,/&+()\-_]/g;
+const norm = (t) => String(t).normalize("NFC").toLowerCase().replace(IGNORED, "");
+function matches(tagName, term) {
+  const a = norm(tagName), b = norm(term);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return Math.min(a.length, b.length) >= 2 && (a.includes(b) || b.includes(a));
+}
+const squash = (s) => Math.sign(s) * (1 - Math.exp(-Math.abs(s)));
+const tagsOf = (a) => a.tags.split(",").map((t) => t.trim()).filter(Boolean);
+
+// 자격 판정(EligibilityRules): 표에 있는 낱말 그대로일 때만
+const ELIG = [
+  [["미취업자", "미취업자만", "미취업청년", "현재미취업자", "미취업상태인자"], (s) => s === "EMPLOYED"],
+  [["재직자", "재직자만", "현직자", "현업종사자", "직장인", "재직중인자"], (s) => s === "STUDENT" || s === "UNEMPLOYED"],
+  [["재학생", "재학생만", "대학생", "대학(원)생", "대학생및대학원생", "대학재학생", "대학교재학생", "대학(원)재학생", "재학생및휴학생", "재학휴학생", "재학·휴학생", "대학재학휴학생", "재학중인학생"], (s) => s !== "STUDENT"],
+];
+const eligNorm = (t) => String(t).replace(/[\s·,]/g, "");
+function ineligible(act, status) {
+  if (!status) return null;
+  for (const line of act.elig.split("\n").map((l) => l.trim()).filter(Boolean)) {
+    if (line.includes("또는")) continue;
+    for (const [words, rule] of ELIG) {
+      if (words.map(eligNorm).includes(eligNorm(line)) && rule(status)) return line;
+    }
+  }
+  return null;
+}
+
+function compute() {
+  const W = state.weights;
+  const now = new Date(state.today + "T12:00:00+09:00");
+  const days = (d) => Math.max(0, d);
+  const decay = (d) => Math.pow(0.5, days(d) / W.HALF_LIFE_DAYS);
+  const orgs = Object.fromEntries(state.orgs.map((o) => [o.id, o]));
+  const childCount = {};
+  state.orgs.forEach((o) => { if (o.parent) childCount[o.parent] = (childCount[o.parent] || 0) + 1; });
+  const broad = (id) => (childCount[id] || 0) > W.BROAD_CHILDREN;
+  const parentOf = (id) => { const p = orgs[id]?.parent; return p && orgs[p] && !broad(p) ? orgs[p] : null; };
+  const chain = (id) => { const out = []; let n = orgs[id]; let i = 0; while (n && i++ < 20) { out.push(n); n = n.parent ? orgs[n.parent] : null; } return out; };
+  const acts = Object.fromEntries(state.acts.map((a) => [a.id, a]));
+
+  // 내 활동은 활동마다 가장 강한 것 하나
+  const strongest = {};
+  const events = [];
+  const excludedActs = {}; const hiddenPrograms = {};
+  for (const h of state.history) {
+    const a = acts[h.act]; if (!a) continue;
+    if (MY_ACTIVITY.includes(h.kind)) {
+      excludedActs[a.id] = "내 활동에 있어요";
+      const prev = strongest[a.id];
+      if (!prev || STRENGTH[h.kind] > STRENGTH[prev.kind]) strongest[a.id] = h;
+      continue;
+    }
+    if (h.kind === "DISMISS") excludedActs[a.id] = "관심 없어요를 남겼어요";
+    if (h.kind === "INELIGIBLE") { excludedActs[a.id] = "자격 안 됨을 남겼어요"; continue; }
+    if (h.kind === "HIDE_PROGRAM") { hiddenPrograms[a.program] = true; continue; }
+    events.push(h);
+  }
+  Object.values(strongest).forEach((h) => events.push(h));
+
+  const fieldH = {}, kindH = {}, programH = {}, orgH = {}, relation = {}, less = {};
+  const add = (m, k, v) => { m[k] = (m[k] || 0) + v; };
+  for (const h of events) {
+    const a = acts[h.act]; const [, wKey, rel] = HISTORY_KINDS[h.kind];
+    const w = W[wKey] * decay(h.days);
+    tagsOf(a).forEach((t) => add(fieldH, norm(t), w));
+    add(kindH, a.kind, w);
+    add(programH, a.program, w);
+    if (rel) { const cur = relation[a.program]; if (!cur || RELATION_ORDER.indexOf(rel) < RELATION_ORDER.indexOf(cur)) relation[a.program] = rel; }
+    if (a.org) { add(orgH, a.org, W.ORGANIZATION_SHARE * w); const p = parentOf(a.org); if (p) add(orgH, p.id, W.PARENT_SHARE * w); }
+  }
+  state.less.forEach((l) => { if (l.tag.trim()) add(less, norm(l.tag), decay(l.days)); });
+  const members = new Set(state.memberOrgs);
+  const jobTerms = state.jobs.filter((j) => j.text.trim());
+  const empty = jobTerms.length === 0 && state.history.length === 0 && state.less.filter((l) => l.tag.trim()).length === 0 && members.size === 0;
+
+  const fieldInterest = (tag) => {
+    const p = Math.max(0, ...jobTerms.filter((j) => matches(tag, j.text)).map((j) => Number(j.w)));
+    const hh = squash(fieldH[norm(tag)] || 0);
+    return hh >= 0 ? 1 - (1 - p) * (1 - hh) : Math.max(-1, p + hh);
+  };
+  const membership = (orgId) => {
+    if (!orgId) return null;
+    if (members.has(orgId)) return [orgs[orgId]?.name, W.MEMBER_SELF];
+    const below = chain(orgId).slice(1).find((n) => members.has(n.id) && !broad(n.id));
+    if (below) return [below.name, W.MEMBER_RELATED];
+    for (const m of members) { const above = chain(m).slice(1).find((n) => n.id === orgId && !broad(n.id)); if (above) return [above.name, W.MEMBER_RELATED]; }
+    return null;
+  };
+
+  const results = []; const excluded = [];
+  for (const a of state.acts) {
+    const endDate = a.end ? new Date(a.end + "T23:59:00+09:00") : null;
+    if (endDate && endDate < now) { excluded.push([a, "모집이 끝났어요"]); continue; }
+    if (excludedActs[a.id]) { excluded.push([a, excludedActs[a.id]]); continue; }
+    if (hiddenPrograms[a.program]) { excluded.push([a, "시리즈 숨기기를 남겼어요"]); continue; }
+    const bad = ineligible(a, state.employment);
+    if (bad) { excluded.push([a, `자격 "${bad}"이 지금 상태와 맞지 않아요`]); continue; }
+
+    const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1] - x[1]);
+    const field = fields.length ? fields[0][1] : 0;
+    const kind = squash(kindH[a.kind] || 0);
+    const member = membership(a.org);
+    const atOrg = a.org ? squash(orgH[a.org] || 0) : 0;
+    const parent = a.org ? parentOf(a.org) : null;
+    const atParent = parent ? squash(orgH[parent.id] || 0) : 0;
+    const program = squash(programH[a.program] || 0);
+    const hist = Math.max(atOrg, atParent);
+    const positive = Math.max(member ? member[1] : 0, Math.max(0, hist)) + Math.max(0, program);
+    const orgScore = Math.min(1, Math.max(-1, positive + Math.min(0, hist) + Math.min(0, program)));
+    let orgReason = null;
+    if (relation[a.program] && program > 0) orgReason = RELATION_REASONS[relation[a.program]];
+    else if (member) orgReason = `내 소속 ${member[0]}`;
+    else if (atOrg >= W.REASON_THRESHOLD) orgReason = `${orgs[a.org]?.name}에 관심을 보였어요`;
+    else if (atParent >= W.REASON_THRESHOLD && parent) orgReason = `같은 ${parent.name} 그룹`;
+
+    const daysLeft = endDate ? (endDate - now) / 86400000 : null;
+    const near = daysLeft !== null && daysLeft >= 0 && daysLeft <= W.DEADLINE_DAYS;
+    const interests = [orgReason, ...fields.filter(([t, v]) => v >= W.REASON_THRESHOLD && !(norm(t) in less)).map(([t]) => t), kind >= W.REASON_THRESHOLD ? KINDS[a.kind] : null].filter(Boolean);
+    const reasons = [...interests.slice(0, 2), ...(near ? [`${endDate.getMonth() + 1}월 ${endDate.getDate()}일 마감`] : [])];
+    const lessV = Math.min(1, tagsOf(a).reduce((s, t) => s + (less[norm(t)] || 0), 0));
+    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV };
+    const points = parts.field + parts.kind + parts.org + parts.deadline + parts.less;
+    results.push({ a, points, parts, reasons, end: endDate, raw: { field, kind, orgScore } });
+  }
+  const byDeadline = (x, y) => (x.end ? x.end.getTime() : Infinity) - (y.end ? y.end.getTime() : Infinity) || x.a.id.localeCompare(y.a.id);
+  results.sort(empty ? byDeadline : (x, y) => y.points - x.points || byDeadline(x, y));
+  const per = {}; const picks = [];
+  for (const r of results) {
+    per[r.a.program] = (per[r.a.program] || 0) + 1;
+    if (per[r.a.program] > W.PER_PROGRAM) { excluded.push([r.a, `같은 시리즈가 이미 ${W.PER_PROGRAM}개`]); continue; }
+    if (picks.length >= W.SIZE) { excluded.push([r.a, `고르는 수 ${W.SIZE}개를 넘었어요 (점수 ${r.points.toFixed(1)})`]); continue; }
+    picks.push(r);
+  }
+  const interest = {
+    field: Object.fromEntries(Object.entries(fieldH).map(([k, v]) => [k, squash(v)])),
+    kind: Object.fromEntries(Object.entries(kindH).map(([k, v]) => [k, squash(v)])),
+    program: Object.fromEntries(Object.entries(programH).map(([k, v]) => [k, squash(v)])),
+    org: Object.fromEntries(Object.entries(orgH).map(([k, v]) => [k, squash(v)])),
+    less: { ...less },
+  };
+  const scores = Object.fromEntries(results.map((r) => [r.a.id, r.points]));
+  return { picks, excluded, empty, candidates: results.length, interest, scores, ranked: results.map((r) => r.a.id) };
+}
+
+// 화면
+const orgOptions = (sel) => `<option value="">없음</option>` + state.orgs.map((o) => `<option value="${esc(o.id)}"${o.id === sel ? " selected" : ""}>${esc(o.name)}</option>`).join("");
+const actOptions = (sel) => state.acts.map((a) => `<option value="${esc(a.id)}"${a.id === sel ? " selected" : ""}>${esc(a.name)}</option>`).join("");
+
+function renderInputs() {
+  $("employment").value = state.employment;
+  $("today").value = state.today;
+  $("jobs").innerHTML = state.jobs.map((j, i) => `<div class="row job">
+    <label for="job-t-${i}">낱말<input id="job-t-${i}" data-k="jobs.${i}.text" value="${esc(j.text)}"></label>
+    <label for="job-w-${i}">무게<select id="job-w-${i}" data-k="jobs.${i}.w" data-num>${JOB_PRESETS.map(([n, w]) => `<option value="${w}"${Number(j.w) === w ? " selected" : ""}>${n} ${w}</option>`).join("")}</select></label>
+    <button type="button" class="icon" data-del="jobs.${i}" aria-label="낱말 지우기">✕</button></div>`).join("");
+  $("member-orgs").innerHTML = state.orgs.map((o) => `<button type="button" class="chip ${state.memberOrgs.includes(o.id) ? "" : "muted"}" data-member="${esc(o.id)}" aria-pressed="${state.memberOrgs.includes(o.id)}">${esc(o.name)}</button>`).join("");
+  $("history").innerHTML = state.history.map((h, i) => `<div class="row hist">
+    <label for="h-a-${i}">활동<select id="h-a-${i}" data-k="history.${i}.act">${actOptions(h.act)}</select></label>
+    <label for="h-k-${i}">기록<select id="h-k-${i}" data-k="history.${i}.kind">${Object.entries(HISTORY_KINDS).map(([k, [n]]) => `<option value="${k}"${k === h.kind ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+    <label for="h-d-${i}">며칠 전<input id="h-d-${i}" type="number" min="0" data-k="history.${i}.days" data-num value="${h.days}"></label>
+    <button type="button" class="icon" data-del="history.${i}" aria-label="기록 지우기">✕</button></div>`).join("") || `<p class="hint">기록이 없어요.</p>`;
+  $("less").innerHTML = state.less.map((l, i) => `<div class="row less">
+    <label for="l-t-${i}">분야<input id="l-t-${i}" data-k="less.${i}.tag" value="${esc(l.tag)}"></label>
+    <label for="l-d-${i}">며칠 전<input id="l-d-${i}" type="number" min="0" data-k="less.${i}.days" data-num value="${l.days}"></label>
+    <button type="button" class="icon" data-del="less.${i}" aria-label="분야 지우기">✕</button></div>`).join("");
+  $("weights").innerHTML = Object.entries(DEFAULT_WEIGHTS).map(([k, [def, n]]) => `<label for="w-${k}">${n}${state.weights[k] !== def ? ` <span class="chip warn">기본 ${def}</span>` : ""}<input id="w-${k}" type="number" step="any" data-k="weights.${k}" data-num value="${state.weights[k]}"></label>`).join("");
+  $("acts").innerHTML = state.acts.map((a, i) => `<tr>
+    <td><input aria-label="활동 이름" data-k="acts.${i}.name" value="${esc(a.name)}"></td>
+    <td><input aria-label="시리즈" data-k="acts.${i}.program" value="${esc(a.program)}"></td>
+    <td><select aria-label="종류" data-k="acts.${i}.kind">${Object.entries(KINDS).map(([k, n]) => `<option value="${k}"${k === a.kind ? " selected" : ""}>${n}</option>`).join("")}</select></td>
+    <td><input aria-label="분야" data-k="acts.${i}.tags" value="${esc(a.tags)}"></td>
+    <td><select aria-label="여는 조직" data-k="acts.${i}.org">${orgOptions(a.org)}</select></td>
+    <td><input aria-label="마감" type="date" data-k="acts.${i}.end" value="${esc(a.end)}"></td>
+    <td><input aria-label="필수 자격" data-k="acts.${i}.elig" value="${esc(a.elig)}" placeholder="예: 대학생"></td>
+    <td><button type="button" class="icon" data-del="acts.${i}" aria-label="활동 지우기">✕</button></td></tr>`).join("");
+  $("orgs").innerHTML = state.orgs.map((o, i) => `<div class="row org">
+    <label for="o-n-${i}">조직<input id="o-n-${i}" data-k="orgs.${i}.name" value="${esc(o.name)}"></label>
+    <label for="o-p-${i}">상위 조직<select id="o-p-${i}" data-k="orgs.${i}.parent">${orgOptions(o.parent).replace(`value="${esc(o.id)}"`, `value="${esc(o.id)}" disabled`)}</select></label>
+    <button type="button" class="icon" data-del="orgs.${i}" aria-label="조직 지우기">✕</button></div>`).join("");
+}
+
+const fmt = (v) => (v >= 0 ? "+" : "") + v.toFixed(1);
+function renderResult() {
+  const r = compute();
+  $("mode").textContent = r.empty ? "프로필과 기록이 비어 마감 순" : "개인 맞춤";
+  $("meta").innerHTML = `<span>후보 <b>${r.candidates}</b>개</span><span>고른 수 <b>${r.picks.length}</b>개</span><span>빠짐 <b>${r.excluded.length}</b>개</span>`;
+  const max = Math.max(1, ...r.picks.map((p) => Object.values(p.parts).filter((v) => v > 0).reduce((s, v) => s + v, 0)));
+  $("picks").innerHTML = r.picks.map((p, i) => {
+    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["deadline", "--bar-deadline", "마감"]];
+    const bar = seg.filter(([k]) => p.parts[k] > 0).map(([k, c]) => `<span style="width:${(p.parts[k] / max) * 100}%;background:var(${c})"></span>`).join("");
+    const legend = [...seg, ["less", "--bar-less", "덜 보기"]].filter(([k]) => Math.abs(p.parts[k]) > 0.05).map(([k, c, n]) => `<span><i style="background:var(${c})"></i>${n} ${fmt(p.parts[k])}</span>`).join("");
+    const org = state.orgs.find((o) => o.id === p.a.org)?.name;
+    return `<li><span class="rank">${i + 1}</span>
+      <div><div class="pick-name">${esc(p.a.name)}</div>
+      <div class="pick-sub">${esc(KINDS[p.a.kind])} · ${esc(p.a.program)}${org ? " · " + esc(org) : ""}</div></div>
+      <div class="score">${r.empty ? "—" : p.points.toFixed(1)}<small>점</small></div>
+      <div class="breakdown">
+        <div class="chips">${p.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("") || `<span class="chip muted">이유 없음</span>`}</div>
+        ${r.empty ? "" : `<div class="bar" aria-hidden="true">${bar}</div><div class="legend">${legend || "<span>점수 0</span>"}</div>`}
+      </div></li>`;
+  }).join("") || `<li class="empty">고를 후보가 없어요.</li>`;
+  $("excluded-title").textContent = `후보에서 빠진 활동 ${r.excluded.length}개`;
+  $("excluded").innerHTML = r.excluded.map(([a, why]) => `<li><div><div class="pick-name">${esc(a.name)}</div><div class="pick-sub">${esc(a.program)}</div></div><span class="chip warn">${esc(why)}</span></li>`).join("") || `<li class="empty">없어요.</li>`;
+}
+
+function setPath(path, value) {
+  const keys = path.split("."); let o = state;
+  for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+  o[keys.at(-1)] = value;
+}
+function update(full) { save(); if (full) renderInputs(); renderResult(); renderTrace(); }
+
+// 동작 추적
+const ACT_NAMES = { LIKE: "관심 있어요", UNLIKE: "관심 있어요 취소", OPEN_DETAIL: "자세히", BOOKMARKED: "찜", APPLIED: "지원", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
+const ADVANCES = new Set(["LIKE", "BOOKMARKED", "APPLIED", "COMPLETE", "SKIP_EARLY", "DISMISS", "LESS_FIELD", "HIDE_PROGRAM", "INELIGIBLE"]);
+function ensureTrace() { state.trace ||= []; state.seen ||= []; }
+function tagLabel(normKey) {
+  for (const a of state.acts) for (const t of tagsOf(a)) if (norm(t) === normKey) return t;
+  for (const l of state.less) if (norm(l.tag) === normKey) return l.tag;
+  return normKey;
+}
+const orgName = (id) => state.orgs.find((o) => o.id === id)?.name || id;
+const TYPE_NAMES = { field: "분야", kind: "종류", program: "시리즈", org: "조직", less: "덜 보기" };
+const labelOf = (type, key) => type === "field" || type === "less" ? tagLabel(key) : type === "kind" ? KINDS[key] : type === "org" ? orgName(key) : key;
+
+function currentCard(r) { ensureTrace(); return r.picks.find((p) => !state.seen.includes(p.a.id)) || null; }
+
+function doAction(kind) {
+  ensureTrace();
+  const before = compute();
+  const card = currentCard(before);
+  if (!card) return;
+  const a = card.a;
+  const uid = Math.random().toString(36).slice(2, 9);
+  const entry = { uid, act: a.id, kind, name: a.name, added: [], removed: [], advanced: false };
+  const hasLike = state.history.some((h) => h.act === a.id && h.kind === "LIKE");
+  if (kind === "LIKE" && hasLike) {
+    entry.kind = "UNLIKE";
+    state.history = state.history.filter((h) => { if (h.act === a.id && h.kind === "LIKE") { entry.removed.push(h); return false; } return true; });
+  } else if (kind === "LESS_FIELD") {
+    const tag = tagsOf(a)[0];
+    if (!tag) return;
+    const item = { tag, days: 0, uid };
+    state.less.push(item); entry.added.push(["less", item]); entry.tag = tag;
+  } else {
+    // LIKE와 DISMISS는 서로를 지운다
+    const opposite = kind === "LIKE" ? "DISMISS" : kind === "DISMISS" ? "LIKE" : null;
+    if (opposite) state.history = state.history.filter((h) => { if (h.act === a.id && h.kind === opposite) { entry.removed.push(h); return false; } return true; });
+    const item = { act: a.id, kind, days: 0, uid };
+    state.history.push(item); entry.added.push(["history", item]);
+  }
+  if (ADVANCES.has(kind)) { state.seen.push(a.id); entry.advanced = true; }
+  const after = compute();
+  entry.diff = diffOf(before, after);
+  state.trace.push(entry);
+  update(true);
+}
+
+function undoAction() {
+  ensureTrace();
+  const e = state.trace.pop(); if (!e) return;
+  if (e.bundleMark) { state.bundle = Math.max(1, (state.bundle || 2) - 1); state.seen = state.trace.filter((x) => x.advanced && !x.bundleMark && state.trace.lastIndexOf(state.trace.filter((y) => y.bundleMark).at(-1)) < state.trace.indexOf(x)).map((x) => x.act); return update(true); }
+  e.added.forEach(([list, item]) => { state[list] = state[list].filter((x) => x.uid !== item.uid); });
+  e.removed.forEach((h) => state.history.push(h));
+  if (e.advanced) state.seen = state.seen.filter((id) => id !== e.act);
+  update(true);
+}
+
+function diffOf(before, after) {
+  const interest = [];
+  for (const type of ["field", "kind", "program", "org", "less"]) {
+    const keys = new Set([...Object.keys(before.interest[type]), ...Object.keys(after.interest[type])]);
+    for (const k of keys) {
+      const b = before.interest[type][k] || 0, x = after.interest[type][k] || 0;
+      if (Math.abs(x - b) > 0.0005) interest.push({ type, key: k, before: b, after: x });
+    }
+  }
+  const rank = (r) => Object.fromEntries(r.ranked.map((id, i) => [id, i + 1]));
+  const rb = rank(before), ra = rank(after);
+  const acts = new Set([...Object.keys(before.scores), ...Object.keys(after.scores)]);
+  const scores = [];
+  for (const id of acts) {
+    const b = before.scores[id], x = after.scores[id];
+    if (b === undefined || x === undefined || Math.abs(x - b) > 0.05 || rb[id] !== ra[id]) scores.push({ id, before: b, after: x, rb: rb[id], ra: ra[id] });
+  }
+  scores.sort((p, q) => Math.abs((q.after ?? 0) - (q.before ?? 0)) - Math.abs((p.after ?? 0) - (p.before ?? 0)));
+  return { interest, scores: scores.slice(0, 10) };
+}
+
+const sgn = (v) => (v > 0 ? "+" : "") + v.toFixed(2);
+const cls = (d) => (d > 0 ? "up" : d < 0 ? "down" : "");
+function renderTrace() {
+  if ($("view-trace").hidden) return;
+  ensureTrace();
+  const r = compute();
+  const card = currentCard(r);
+  const shown = r.picks.filter((p) => !state.seen.includes(p.a.id)).length;
+  $("trace-pos").textContent = `${state.bundle || 1}번째 묶음 · ` + (card ? `${r.picks.length - shown + 1} / ${r.picks.length}` : "다 봤어요");
+  if (card) {
+    const liked = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE");
+    const org = state.orgs.find((o) => o.id === card.a.org)?.name;
+    $("phone").className = "phone";
+    $("phone").innerHTML = `${liked ? `<span class="liked">관심 있어요 ✓</span>` : ""}
+      <div class="p-kind">${esc(KINDS[card.a.kind])} · ${esc(card.a.program)}</div>
+      <div class="p-name">${esc(card.a.name)}</div>
+      <div class="p-sub">${org ? esc(org) + " · " : ""}${card.a.end ? esc(card.a.end) + " 마감" : ""} · 분야 ${esc(tagsOf(card.a).join(", ") || "없음")}</div>
+      <div class="chips">${card.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>`;
+  } else {
+    $("phone").className = "phone done";
+    $("phone").innerHTML = `<div class="p-name">오늘 고른 활동을 다 봤어요</div><div class="p-sub">"다음 묶음 만들기"로 지금까지의 동작을 반영한 새 묶음을 받아요.</div>`;
+  }
+  $("trace-actions").querySelectorAll("button").forEach((b) => { b.disabled = !card; });
+  const likeBtn = $("trace-actions").querySelector('[data-act="LIKE"]');
+  if (card) likeBtn.textContent = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE") ? "관심 있어요 취소" : "관심 있어요";
+  $("trace-undo").disabled = !state.trace.length;
+
+  const last = state.trace.at(-1);
+  if (!last) {
+    $("trace-last").className = "empty";
+    $("trace-last").textContent = "카드에서 동작을 누르면 여기에 관심과 순위의 변화가 나옵니다.";
+  } else {
+    const d = last.diff;
+    const nameOf = (id) => state.acts.find((a) => a.id === id)?.name || id;
+    $("trace-last").className = "";
+    $("trace-last").innerHTML = `<p class="hint" style="margin-top:0"><b>${esc(last.name)}</b>에 <b>${esc(ACT_NAMES[last.kind])}</b>${last.tag ? ` (${esc(last.tag)})` : ""}</p>
+      <h3 class="hint" style="font-weight:600;color:var(--ink)">관심 변화</h3>
+      ${d.interest.length ? `<div class="delta-table"><table><thead><tr><th>종류</th><th>대상</th><th class="num">전</th><th class="num">후</th><th class="num">변화</th></tr></thead><tbody>
+      ${d.interest.map((x) => `<tr><td>${TYPE_NAMES[x.type]}</td><td>${esc(labelOf(x.type, x.key))}</td><td class="num">${x.before.toFixed(2)}</td><td class="num">${x.after.toFixed(2)}</td><td class="num ${cls(x.after - x.before)}">${sgn(x.after - x.before)}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="hint">관심 값은 바뀌지 않았어요(이 동작은 후보에서 빼거나 기록하지 않는 동작이에요).</p>`}
+      <h3 class="hint" style="font-weight:600;color:var(--ink)">다음 묶음의 점수와 순위</h3>
+      ${d.scores.length ? `<div class="delta-table"><table><thead><tr><th>활동</th><th class="num">점수 전→후</th><th class="num">순위 전→후</th></tr></thead><tbody>
+      ${d.scores.map((x) => {
+        const s = x.after === undefined ? "후보에서 빠짐" : x.before === undefined ? "후보에 들어옴" : `${x.before.toFixed(1)} → ${x.after.toFixed(1)} <span class="${cls(x.after - x.before)}">(${(x.after - x.before >= 0 ? "+" : "") + (x.after - x.before).toFixed(1)})</span>`;
+        const rk = x.ra === undefined ? `${x.rb} → —` : x.rb === undefined ? `— → ${x.ra}` : `${x.rb} → ${x.ra} <span class="${cls(x.rb - x.ra)}">${x.rb === x.ra ? "" : x.rb > x.ra ? "▲" + (x.rb - x.ra) : "▼" + (x.ra - x.rb)}</span>`;
+        return `<tr><td>${esc(nameOf(x.id))}</td><td class="num">${s}</td><td class="num">${rk}</td></tr>`;
+      }).join("")}</tbody></table></div>` : `<p class="hint">점수와 순위는 그대로예요.</p>`}`;
+  }
+
+  const rows = [];
+  for (const type of ["field", "kind", "program", "org"]) for (const [k, v] of Object.entries(r.interest[type])) if (Math.abs(v) > 0.0005) rows.push({ type, k, v });
+  for (const [k, v] of Object.entries(r.interest.less)) rows.push({ type: "less", k, v: -Math.min(1, v) });
+  rows.sort((p, q) => Math.abs(q.v) - Math.abs(p.v));
+  $("trace-interest").innerHTML = rows.length ? `<div class="ilist">${rows.map(({ type, k, v }) => {
+    const left = v >= 0 ? 50 : 50 + v * 50, width = Math.abs(v) * 50;
+    return `<div class="irow"><span class="itype">${TYPE_NAMES[type]}</span><span>${esc(labelOf(type, k))}</span><span class="ibar" aria-hidden="true"><span style="left:${left}%;width:${width}%;background:var(${v >= 0 ? "--accent" : "--bad"})"></span></span><span class="ival ${cls(v)}">${sgn(v)}</span></div>`;
+  }).join("")}</div><p class="hint">직무 낱말로 생기는 분야 관심은 활동마다 따로 더해져 여기에는 나오지 않아요. 기록과 반응에서 생긴 관심만 보여요.</p>` : `<p class="empty">기록과 반응이 없어요.</p>`;
+
+  $("trace-log").innerHTML = state.trace.map((e) => e.bundleMark ? `<li><b>${esc(e.name)} 만듦</b></li>` : `<li>${esc(e.name)} · ${esc(ACT_NAMES[e.kind])}${e.tag ? ` (${esc(e.tag)})` : ""} — 관심 ${e.diff.interest.length}개, 점수 ${e.diff.scores.length}개 바뀜</li>`).join("") || `<li class="empty" style="list-style:none">아직 동작이 없어요.</li>`;
+}
+
+function showView(v) {
+  const trace = v === "trace";
+  $("view-trace").hidden = !trace; $("view-calc").hidden = trace;
+  $("tab-calc").setAttribute("aria-selected", String(!trace)); $("tab-trace").setAttribute("aria-selected", String(trace));
+  try { localStorage.setItem("queue-lab-view", v); } catch {}
+  if (trace) renderTrace();
+}
+
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (el.id === "employment") { state.employment = el.value; return update(false); }
+  if (el.id === "today") { if (el.value) state.today = el.value; return update(false); }
+  if (!el.dataset.k) return;
+  setPath(el.dataset.k, el.hasAttribute("data-num") ? Number(el.value) : el.value);
+  const structural = /^(orgs\.\d+\.name|acts\.\d+\.name)$/.test(el.dataset.k);
+  update(false);
+  if (structural) { const f = document.activeElement?.id; renderInputs(); if (f) $(f)?.focus(); }
+});
+document.addEventListener("change", (e) => { if (e.target.tagName === "SELECT" && e.target.dataset.k && e.target.dataset.k.startsWith("weights")) renderInputs(); });
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.view) return showView(t.dataset.view);
+  if (t.dataset.act) return doAction(t.dataset.act);
+  if (t.id === "trace-undo") return undoAction();
+  if (t.id === "trace-next") { ensureTrace(); state.seen = []; state.bundle = (state.bundle || 1) + 1; state.trace.push({ uid: "b" + state.bundle, kind: "NEXT", name: `${state.bundle}번째 묶음`, added: [], removed: [], advanced: false, bundleMark: true, diff: { interest: [], scores: [] } }); return update(true); }
+  if (t.id === "trace-clear") { ensureTrace(); while (state.trace.length) { const e2 = state.trace.pop(); e2.added.forEach(([list, item]) => { state[list] = state[list].filter((x) => x.uid !== item.uid); }); e2.removed.forEach((h) => state.history.push(h)); } state.seen = []; state.bundle = 1; return update(true); }
+  if (t.dataset.del) { const [list, i] = t.dataset.del.split("."); const removed = state[list].splice(Number(i), 1)[0];
+    if (list === "acts") state.history = state.history.filter((h) => h.act !== removed.id);
+    if (list === "orgs") { state.memberOrgs = state.memberOrgs.filter((m) => m !== removed.id); state.acts.forEach((a) => { if (a.org === removed.id) a.org = ""; }); state.orgs.forEach((o) => { if (o.parent === removed.id) o.parent = ""; }); }
+    return update(true); }
+  if (t.dataset.member) { const id = t.dataset.member; state.memberOrgs = state.memberOrgs.includes(id) ? state.memberOrgs.filter((m) => m !== id) : [...state.memberOrgs, id]; return update(true); }
+  const id = () => Math.random().toString(36).slice(2, 8);
+  if (t.id === "add-job") { state.jobs.push({ text: "", w: 1.0 }); return update(true); }
+  if (t.id === "add-hist" && state.acts.length) { state.history.push({ act: state.acts[0].id, kind: "BOOKMARKED", days: 0 }); return update(true); }
+  if (t.id === "add-less") { state.less.push({ tag: "", days: 0 }); return update(true); }
+  if (t.id === "add-act") { state.acts.push({ id: "a" + id(), name: "새 활동", program: "새 시리즈", kind: "MEETUP", tags: "", org: "", end: state.today, elig: "" }); return update(true); }
+  if (t.id === "add-org") { state.orgs.push({ id: "o-" + id(), name: "새 조직", parent: "" }); return update(true); }
+  if (t.id === "reset") { state = structuredClone(EXAMPLE); return update(true); }
+});
+
+renderInputs();
+renderResult();
+let startView = "calc";
+try { startView = localStorage.getItem("queue-lab-view") || (location.hash === "#trace" ? "trace" : "calc"); } catch {}
+if (location.hash === "#trace") startView = "trace";
+showView(startView);
+</script>
+
+</body>
+</html>
