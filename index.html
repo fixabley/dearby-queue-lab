@@ -162,8 +162,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
       <div class="actions" id="trace-actions">
         <button type="button" data-act="LIKE">관심 있어요</button>
         <button type="button" data-act="OPEN_DETAIL">자세히</button>
-        <button type="button" data-act="BOOKMARKED">찜</button>
-        <button type="button" data-act="APPLIED">지원</button>
+        <button type="button" data-act="APPLIED">신청</button>
         <button type="button" data-act="COMPLETE">끝까지 보고 넘김</button>
         <button type="button" data-act="SKIP_EARLY">3초 안에 넘김</button>
         <button type="button" data-act="DISMISS">관심 없어요</button>
@@ -176,7 +175,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <button type="button" id="trace-undo">마지막 동작 되돌리기</button>
         <button type="button" id="trace-clear">추적 처음부터</button>
       </div>
-      <p class="hint">회원·후보·가중치는 "계산기" 보기의 값을 그대로 씁니다. 동작은 오늘(0일 전) 기록으로 더해집니다. 서버는 그날 받은 묶음을 고정하므로 순위 변화는 다음 묶음에 반영됩니다. "다음 묶음 만들기"는 몇 번이든 누를 수 있고, 지금까지의 동작을 반영해 새로 고릅니다(관심 없어요 · 자격 안 됨 · 숨긴 시리즈 · 찜 · 지원한 활동은 빠지고, 넘기기만 한 활동은 다시 나올 수 있어요).</p>
+      <p class="hint">회원·후보·가중치는 "계산기" 보기의 값을 그대로 씁니다. 동작은 오늘(0일 전) 기록으로 더해집니다. 서버는 그날 받은 묶음을 고정하므로 순위 변화는 다음 묶음에 반영됩니다. "다음 묶음 만들기"는 몇 번이든 누를 수 있고, 지금까지의 동작을 반영해 새로 고릅니다(관심 없어요 · 자격 안 됨 · 숨긴 시리즈 · 신청한 활동은 빠지고, 넘기기만 한 활동은 다시 나올 수 있어요).</p>
     </section>
   </div>
   <div class="col">
@@ -200,14 +199,6 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     <section class="panel" aria-labelledby="h-member">
       <h2 id="h-member">회원 <small>프로필에서 끌어낸 재료</small></h2>
       <div class="grid2">
-        <label for="employment">지금 상태(자격 판정에만 씀)
-          <select id="employment">
-            <option value="">비움</option>
-            <option value="STUDENT">학생</option>
-            <option value="EMPLOYED">재직</option>
-            <option value="UNEMPLOYED">무직</option>
-          </select>
-        </label>
         <label for="today">오늘(서울)
           <input id="today" type="date">
         </label>
@@ -234,7 +225,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <div class="rows" id="less"></div>
         <button type="button" id="add-less" class="icon">+ 분야</button>
       </details>
-      <p class="hint">내 활동(참여·지원·찜·캘린더에만)은 활동마다 가장 강한 것 하나만 셉니다. 내 활동에 있는 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다.</p>
+      <p class="hint">신청(확정·대기)은 활동마다 강한 것 하나만 셉니다. 신청한 활동, 관심 없어요·자격 안 됨을 남긴 활동, 시리즈 숨기기를 남긴 시리즈는 후보에서 빠집니다. 찜·캘린더에만·지금 상태는 계약에 없어 쓰지 않습니다(찜은 관심 있어요로, 자격은 자격 안 됨 반응으로).</p>
     </section>
 
     <section class="panel" aria-labelledby="h-weights">
@@ -245,7 +236,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     <section class="panel" aria-labelledby="h-acts">
       <h2 id="h-acts">후보 활동 <small>모집 중인 공개 활동</small></h2>
       <div class="act-table"><table>
-        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>여는 조직</th><th>마감</th><th>필수 자격</th><th></th></tr></thead>
+        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>여는 조직</th><th>마감</th><th>필수 자격(참고)</th><th></th></tr></thead>
         <tbody id="acts"></tbody>
       </table></div>
       <button type="button" id="add-act" class="icon">+ 활동</button>
@@ -278,34 +269,31 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
 const KINDS = { BOOTCAMP: "부트캠프", CLUB: "동아리", CONTEST: "공모전", HACKATHON: "해커톤", STUDY: "스터디", CONFERENCE: "컨퍼런스", MEETUP: "밋업", LECTURE: "강연", WORKSHOP: "워크숍", OTHER: "기타" };
 const JOB_PRESETS = [["희망 직무", 1.0], ["희망 직무의 상위", 0.6], ["현직업", 0.7], ["현직업의 상위", 0.4]];
 const HISTORY_KINDS = {
-  PARTICIPATED: ["참여", "PARTICIPATED", "APPLIED"],
-  APPLIED: ["지원", "APPLIED", "APPLIED"],
-  BOOKMARKED: ["찜", "BOOKMARKED", "SAVED"],
-  CALENDAR_ONLY: ["캘린더에만", "CALENDAR_ONLY", "SAVED"],
+  PARTICIPATED: ["확정된 신청", "PARTICIPATED", "APPLIED"],
+  APPLIED: ["신청(본인 기록 포함)", "APPLIED", "APPLIED"],
+  CANCELLED: ["신청 취소", "CANCELLED", null],
   LIKE: ["관심 있어요", "LIKE", "LIKED"],
   COMPLETE: ["끝까지 봄", "COMPLETE", null],
   OPEN_DETAIL: ["자세히 봄", "OPEN_DETAIL", null],
   SKIP_EARLY: ["일찍 넘김", "SKIP_EARLY", null],
   DISMISS: ["관심 없어요", "DISMISS", null],
-  REMOVE: ["내 활동에서 지움", "REMOVE", null],
   INELIGIBLE: ["자격 안 됨", null, null],
   HIDE_PROGRAM: ["시리즈 숨기기", null, null],
 };
-const MY_ACTIVITY = ["PARTICIPATED", "APPLIED", "BOOKMARKED", "CALENDAR_ONLY"];
-const STRENGTH = { PARTICIPATED: 4, APPLIED: 3, BOOKMARKED: 2, CALENDAR_ONLY: 1 };
-const RELATION_REASONS = { APPLIED: "지난 기수에 지원했어요", SAVED: "내 활동에 담았던 시리즈", LIKED: "관심 표시한 시리즈" };
-const RELATION_ORDER = ["APPLIED", "SAVED", "LIKED"];
+const MY_ACTIVITY = ["PARTICIPATED", "APPLIED"];
+const STRENGTH = { PARTICIPATED: 2, APPLIED: 1 };
+const RELATION_REASONS = { APPLIED: "지난 기수에 신청했어요", LIKED: "관심 표시한 시리즈" };
+const RELATION_ORDER = ["APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
   FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
-  PARTICIPATED: [1.0, "기록: 참여"], APPLIED: [0.7, "기록: 지원"], BOOKMARKED: [0.5, "기록: 찜"], CALENDAR_ONLY: [0.3, "기록: 캘린더에만"],
-  LIKE: [0.4, "반응: 관심 있어요"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"], REMOVE: [-0.2, "반응: 내 활동에서 지움"],
+  PARTICIPATED: [1.0, "기록: 확정된 신청"], APPLIED: [0.7, "기록: 신청"], CANCELLED: [-0.2, "기록: 신청 취소"],
+  LIKE: [0.4, "반응: 관심 있어요"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
   HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], PER_PROGRAM: [2, "같은 시리즈 최대"], SIZE: [10, "고르는 수"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
   MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
 };
 
 const EXAMPLE = {
   today: "2026-11-17",
-  employment: "STUDENT",
   jobs: [{ text: "데이터 사이언티스트", w: 1.0 }, { text: "데이터·AI", w: 0.6 }, { text: "백엔드", w: 0.7 }],
   memberOrgs: ["o-snu-cse"],
   orgs: [
@@ -336,7 +324,7 @@ const EXAMPLE = {
     { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", org: "o-nipa", end: "2027-01-15", elig: "미취업청년" },
   ],
   history: [
-    { act: "a2", kind: "BOOKMARKED", days: 30 },
+    { act: "a2", kind: "LIKE", days: 30 },
     { act: "a4", kind: "COMPLETE", days: 2 },
     { act: "a11", kind: "DISMISS", days: 5 },
   ],
@@ -345,8 +333,8 @@ const EXAMPLE = {
 };
 
 let state = load() || structuredClone(EXAMPLE);
-function load() { try { const s = localStorage.getItem("queue-lab"); return s ? JSON.parse(s) : null; } catch { return null; } }
-function save() { try { localStorage.setItem("queue-lab", JSON.stringify(state)); } catch {} }
+function load() { try { const s = localStorage.getItem("queue-lab-v2"); return s ? JSON.parse(s) : null; } catch { return null; } }
+function save() { try { localStorage.setItem("queue-lab-v2", JSON.stringify(state)); } catch {} }
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -399,7 +387,7 @@ function compute() {
   for (const h of state.history) {
     const a = acts[h.act]; if (!a) continue;
     if (MY_ACTIVITY.includes(h.kind)) {
-      excludedActs[a.id] = "내 활동에 있어요";
+      excludedActs[a.id] = "이미 신청했어요";
       const prev = strongest[a.id];
       if (!prev || STRENGTH[h.kind] > STRENGTH[prev.kind]) strongest[a.id] = h;
       continue;
@@ -447,8 +435,6 @@ function compute() {
     if (endDate && endDate < now) { excluded.push([a, "모집이 끝났어요"]); continue; }
     if (excludedActs[a.id]) { excluded.push([a, excludedActs[a.id]]); continue; }
     if (hiddenPrograms[a.program]) { excluded.push([a, "시리즈 숨기기를 남겼어요"]); continue; }
-    const bad = ineligible(a, state.employment);
-    if (bad) { excluded.push([a, `자격 "${bad}"이 지금 상태와 맞지 않아요`]); continue; }
 
     const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1] - x[1]);
     const field = fields.length ? fields[0][1] : 0;
@@ -501,7 +487,6 @@ const orgOptions = (sel) => `<option value="">없음</option>` + state.orgs.map(
 const actOptions = (sel) => state.acts.map((a) => `<option value="${esc(a.id)}"${a.id === sel ? " selected" : ""}>${esc(a.name)}</option>`).join("");
 
 function renderInputs() {
-  $("employment").value = state.employment;
   $("today").value = state.today;
   $("jobs").innerHTML = state.jobs.map((j, i) => `<div class="row job">
     <label for="job-t-${i}">낱말<input id="job-t-${i}" data-k="jobs.${i}.text" value="${esc(j.text)}"></label>
@@ -565,8 +550,8 @@ function setPath(path, value) {
 function update(full) { save(); if (full) renderInputs(); renderResult(); renderTrace(); }
 
 // 동작 추적
-const ACT_NAMES = { LIKE: "관심 있어요", UNLIKE: "관심 있어요 취소", OPEN_DETAIL: "자세히", BOOKMARKED: "찜", APPLIED: "지원", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
-const ADVANCES = new Set(["LIKE", "BOOKMARKED", "APPLIED", "COMPLETE", "SKIP_EARLY", "DISMISS", "LESS_FIELD", "HIDE_PROGRAM", "INELIGIBLE"]);
+const ACT_NAMES = { LIKE: "관심 있어요", UNLIKE: "관심 있어요 취소", OPEN_DETAIL: "자세히", APPLIED: "신청", COMPLETE: "끝까지 보고 넘김", SKIP_EARLY: "3초 안에 넘김", DISMISS: "관심 없어요", LESS_FIELD: "분야 덜 보기", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨" };
+const ADVANCES = new Set(["LIKE", "APPLIED", "COMPLETE", "SKIP_EARLY", "DISMISS", "LESS_FIELD", "HIDE_PROGRAM", "INELIGIBLE"]);
 function ensureTrace() { state.trace ||= []; state.seen ||= []; }
 function tagLabel(normKey) {
   for (const a of state.acts) for (const t of tagsOf(a)) if (norm(t) === normKey) return t;
@@ -712,7 +697,6 @@ function showView(v) {
 
 document.addEventListener("input", (e) => {
   const el = e.target;
-  if (el.id === "employment") { state.employment = el.value; return update(false); }
   if (el.id === "today") { if (el.value) state.today = el.value; return update(false); }
   if (!el.dataset.k) return;
   setPath(el.dataset.k, el.hasAttribute("data-num") ? Number(el.value) : el.value);
@@ -735,7 +719,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.member) { const id = t.dataset.member; state.memberOrgs = state.memberOrgs.includes(id) ? state.memberOrgs.filter((m) => m !== id) : [...state.memberOrgs, id]; return update(true); }
   const id = () => Math.random().toString(36).slice(2, 8);
   if (t.id === "add-job") { state.jobs.push({ text: "", w: 1.0 }); return update(true); }
-  if (t.id === "add-hist" && state.acts.length) { state.history.push({ act: state.acts[0].id, kind: "BOOKMARKED", days: 0 }); return update(true); }
+  if (t.id === "add-hist" && state.acts.length) { state.history.push({ act: state.acts[0].id, kind: "LIKE", days: 0 }); return update(true); }
   if (t.id === "add-less") { state.less.push({ tag: "", days: 0 }); return update(true); }
   if (t.id === "add-act") { state.acts.push({ id: "a" + id(), name: "새 활동", program: "새 시리즈", kind: "MEETUP", tags: "", org: "", end: state.today, elig: "" }); return update(true); }
   if (t.id === "add-org") { state.orgs.push({ id: "o-" + id(), name: "새 조직", parent: "" }); return update(true); }
