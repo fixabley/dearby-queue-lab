@@ -163,7 +163,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
       <h2 id="h-phone">맞춤 대기열 <small id="trace-pos"></small></h2>
       <div class="phone" id="phone"></div>
       <div class="actions" id="trace-actions">
-        <button type="button" data-act="LIKE">관심 있어요</button>
+        <button type="button" data-act="LIKE">찜</button>
         <button type="button" data-act="OPEN_DETAIL">자세히</button>
         <button type="button" data-act="APPLIED">신청</button>
         <button type="button" data-act="COMPLETE">끝까지 보고 넘김</button>
@@ -291,7 +291,7 @@ const HISTORY_KINDS = {
   PARTICIPATED: ["확정된 신청", "PARTICIPATED", "CONFIRMED"],
   APPLIED: ["신청", "APPLIED", "APPLIED"],
   CANCELLED: ["신청 취소", "CANCELLED", null],
-  LIKE: ["관심 있어요", "LIKE", "LIKED"],
+  LIKE: ["찜", "LIKE", "LIKED"],
   COMPLETE: ["끝까지 봄", "COMPLETE", null],
   OPEN_DETAIL: ["자세히 봄", "OPEN_DETAIL", null],
   SKIP_EARLY: ["일찍 넘김", "SKIP_EARLY", null],
@@ -306,7 +306,7 @@ const RELATION_ORDER = ["CONFIRMED", "APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
   FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], CONTENT_POINTS: [15, "내용"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
   PARTICIPATED: [1.0, "기록: 확정된 신청"], APPLIED: [0.7, "기록: 신청"], CANCELLED: [-0.2, "기록: 신청 취소"],
-  LIKE: [0.4, "반응: 관심 있어요"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
+  LIKE: [0.4, "반응: 찜"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
   HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], PER_PROGRAM: [2, "같은 시리즈 최대"], SIZE: [10, "고르는 수"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
   MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], FOLLOWED_PROGRAM: [1.0, "팔로우한 시리즈의 시리즈 관심"], FOLLOWED_ORGANIZATION: [1.0, "팔로우한 조직의 조직 관심"],
   ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
@@ -619,7 +619,7 @@ function compute() {
   const profile = new Map();
   for (const j of jobTerms) for (const t of tokenize(j.text)) profile.set(t.term, Math.max(profile.get(t.term) ?? -Infinity, Number(j.w)));
   const cm = buildContent(corpus, historyWeights, profile, W);
-  // 이유의 근거 기록: 관계가 있는(관심 있어요 · 신청 · 확정) 양의 기록과 감쇠한 가중치. 같은 활동은 관계가 강한 것 하나
+  // 이유의 근거 기록: 관계가 있는(찜 · 신청 · 확정) 양의 기록과 감쇠한 가중치. 같은 활동은 관계가 강한 것 하나
   const evidence = events.filter((h) => HISTORY_KINDS[h.kind][2] && W[HISTORY_KINDS[h.kind][1]] > 0)
     .map((h) => ({ a: acts[h.act], rel: HISTORY_KINDS[h.kind][2], weight: W[HISTORY_KINDS[h.kind][1]] * decay(h.days) }));
   const other = (cand, past) => past.id !== cand.id && past.program !== cand.program;
@@ -915,7 +915,7 @@ function renderTrace() {
     const liked = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE");
     const org = state.orgs.find((o) => o.id === card.a.org)?.name;
     $("phone").className = "phone";
-    $("phone").innerHTML = `${liked ? `<span class="liked">관심 있어요 ✓</span>` : ""}
+    $("phone").innerHTML = `${liked ? `<span class="liked">찜 ✓</span>` : ""}
       <div class="p-kind">${esc(KINDS[card.a.kind])} · ${esc(card.a.program)}</div>
       <div class="p-name">${esc(card.a.name)}</div>
       <div class="p-sub">${org ? esc(org) + " · " : ""}${card.a.end ? esc(card.a.end) + " 마감" : ""} · 분야 ${esc(tagsOf(card.a).join(", ") || "없음")}</div>
@@ -926,7 +926,7 @@ function renderTrace() {
   }
   $("trace-actions").querySelectorAll("button").forEach((b) => { b.disabled = !card; });
   const likeBtn = $("trace-actions").querySelector('[data-act="LIKE"]');
-  if (card) likeBtn.textContent = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE") ? "관심 있어요 취소" : "관심 있어요";
+  if (card) likeBtn.textContent = state.history.some((h) => h.act === card.a.id && h.kind === "LIKE") ? "찜 취소" : "찜";
   $("trace-undo").disabled = !state.trace.length;
 
   const last = state.trace.at(-1);
