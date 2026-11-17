@@ -69,7 +69,7 @@ button:hover { border-color: var(--accent); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .rows { display: grid; gap: 6px; }
 .row { display: grid; gap: 6px; align-items: end; }
-.row.job { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto; }
+.row.job { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.4fr) auto; }
 .row.hist { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 70px auto; }
 .row.less { grid-template-columns: minmax(0, 2fr) 70px auto; }
 .row.org { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) auto; }
@@ -119,7 +119,7 @@ main.trace { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }
 .phone .p-name { font-size: 20px; font-weight: 700; line-height: 1.3; margin: 4px 0; text-wrap: balance; }
 .phone .p-sub { font-size: 12.5px; opacity: 0.85; }
 .phone .chips { margin-top: 10px; }
-.phone .chip { background: color-mix(in srgb, var(--panel) 22%, transparent); color: var(--panel); }
+.phone .chip { white-space: normal; max-width: 100%; background: color-mix(in srgb, var(--panel) 22%, transparent); color: var(--panel); }
 .phone .liked { position: absolute; top: 14px; right: 16px; font-size: 13px; font-weight: 600; }
 .phone.done { justify-content: center; text-align: center; }
 .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; margin-top: 12px; }
@@ -214,7 +214,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <summary>직무 낱말</summary>
         <div class="rows" id="jobs"></div>
         <button type="button" id="add-job" class="icon">+ 낱말</button>
-        <p class="hint">희망 직무의 이름·별칭은 1.0, 그 상위 분류는 0.6, 현직업 직무는 0.7, 그 상위는 0.4. 분야 태그와 공백·가운뎃점을 뺀 글자로 견주고, 두 글자 이상이면 한쪽이 다른 쪽에 들어도 맞습니다.</p>
+        <p class="hint">희망 직무의 이름·별칭은 1.0, 그 상위 분류는 0.6, 현직업 직무는 0.7, 그 상위는 0.4. 분야 태그와 공백·가운뎃점을 뺀 글자로 견주고, 두 글자 이상이면 한쪽이 다른 쪽에 들어도 맞습니다. "고른 직무"는 이유에 쓰는 이름입니다(회원이 고른 직무 분류 이름, 상위 분류 낱말도 고른 직무를 씁니다). 비우면 낱말 자신이고, 희망 직무인지 현직업인지는 무게로 갈립니다(1.0·0.6 희망, 0.7·0.4 현직업).</p>
       </details>
       <details open>
         <summary>팔로우한 시리즈 · 조직</summary>
@@ -276,7 +276,8 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <summary>점수 식</summary>
         <p class="hint">점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 15 × 내용 관심 + 5 × (14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필·기록·팔로우가 모두 비면 마감 순이고 내용 관심은 쓰지 않습니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
         <p class="hint">조직·시리즈 관심 = clamp(max(소속, 조직 팔로우, max(기록의 조직, 0)) + max(시리즈, 0) + min(기록의 조직, 0) + min(시리즈, 0), −1, 1). 팔로우한 시리즈는 시리즈 관심 1.0.</p>
-        <p class="hint">내용 관심 = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 u·d가 큰 낱말 둘이 이유가 됩니다.</p>
+        <p class="hint">내용 관심 = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 사용자 벡터에 가장 크게 보탠 근거가 이유가 됩니다. 기록 활동 하나(그 활동이 u에 더한 배수 × 그 활동 벡터 · d)와 직무 하나(p 가운데 그 직무의 낱말만 · d) 가운데 큰 쪽(같으면 기록)이 "신청한 ○○와 비슷해요"·"희망 직무 '…'와 맞아요"가 되고, 정하지 못하면 u·d가 큰 낱말 둘입니다.</p>
+        <p class="hint">이유 규칙(근거형): 점수·문턱·차례·개수(관심 이유 둘 + 마감 하나)는 그대로고 글만 근거를 보입니다. 분야 이유는 직무 쪽(프로필) ≥ 기록 쪽이면 "희망 직무 '…'와 맞아요"·"현직업 '…'와 맞아요", 아니면 그 분야가 붙은 근거 기록 가운데 가장 무거운 것으로 "관심 표시한 ○○와 비슷해요"·"신청한 ○○와 비슷해요", 근거가 없으면 맞은 직무, 아니면 분야 이름입니다. 종류 이유도 같은 종류의 가장 무거운 근거 기록, 없으면 종류 이름입니다. 근거 기록은 관심 있어요·신청·확정된 신청만(약한 신호와 부정 기록은 안 써요)이고 그 후보 자신과 같은 시리즈의 기록은 뺍니다. 같은 글이 둘이면 하나로 셉니다. 활동 이름은 12자, 직무 이름은 10자를 넘으면 앞부분과 "…"로 줄이고, 마지막 글자 받침에 따라 와/과를 붙입니다.</p>
       </details>
     </section>
   </div>
@@ -319,7 +320,7 @@ const STOP_WORDS = new Set(["모집", "기수", "참가자", "참가", "활동",
 
 const EXAMPLE = {
   today: "2026-11-17",
-  jobs: [{ text: "데이터 사이언티스트", w: 1.0 }, { text: "데이터·AI", w: 0.6 }, { text: "백엔드", w: 0.7 }],
+  jobs: [{ text: "데이터 사이언티스트", src: "데이터 사이언티스트", w: 1.0 }, { text: "데이터·AI", src: "데이터 사이언티스트", w: 0.6 }, { text: "백엔드", src: "백엔드 개발자", w: 0.7 }],
   memberOrgs: ["o-snu-cse"],
   followPrograms: [],
   followOrgs: [],
@@ -360,6 +361,8 @@ const EXAMPLE = {
 };
 
 let state = load() || structuredClone(EXAMPLE);
+// 예전에 저장한 모양에는 낱말의 "고른 직무"(src)가 없다. 비워 두면 낱말 자신이 직무 이름이다
+state.jobs.forEach((j) => { if (typeof j.src !== "string") j.src = ""; });
 function load() { try { const s = localStorage.getItem("queue-lab-v3"); return s ? JSON.parse(s) : null; } catch { return null; } }
 function save() { try { localStorage.setItem("queue-lab-v3", JSON.stringify(state)); } catch {} }
 
@@ -449,14 +452,17 @@ function buildContent(corpus, history, profile, W) {
   }
   const sum = new Map();
   const addTo = (t, v) => sum.set(t, (sum.get(t) || 0) + v);
+  const scales = new Map(); // 기록 활동마다 사용자 벡터에 더한 배수(같은 활동은 더한다)
   for (const [id, weight] of history) {
     const scale = weight < 0 ? W.GAMMA * weight : weight;
+    scales.set(id, (scales.get(id) || 0) + scale);
     const v = vectors.get(id);
     if (v) for (const [t, x] of v) addTo(t, scale * x);
   }
   const p = new Map();
   for (const [t, w] of profile) p.set(t, w * idf(t));
-  for (const [t, x] of l2(p)) addTo(t, W.PROFILE_WEIGHT * x);
+  const profileVec = new Map();
+  for (const [t, x] of l2(p)) { addTo(t, W.PROFILE_WEIGHT * x); profileVec.set(t, W.PROFILE_WEIGHT * x); }
   const user = l2(sum);
   return {
     user, size: N, vocabulary: df.size,
@@ -478,8 +484,44 @@ function buildContent(corpus, history, profile, W) {
       const seen = new Set();
       return [...byWord].filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).map(([w]) => w).filter((w) => { const k = w.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
     },
+    // 이유의 근거: 기록 활동 하나가 이 후보의 내용 관심에 보탠 몫(정규화 전 사용자 벡터의 그 성분 · 후보 벡터). 0 이하는 뺀다
+    historyShares(id) {
+      const v = vectors.get(id); const out = new Map(); if (!v) return out;
+      for (const [pid, scale] of scales) {
+        const past = vectors.get(pid); if (!past) continue;
+        let dot = 0; for (const [t, x] of past) dot += x * (v.get(t) || 0);
+        if (scale * dot > 0) out.set(pid, scale * dot);
+      }
+      return out;
+    },
+    // 이유의 근거: 프로필 낱말 벡터 가운데 terms(직무 하나의 낱말)만으로 이 후보의 내용 관심에 보탠 몫
+    profileShare(id, terms) {
+      const v = vectors.get(id); if (!v) return 0;
+      let s = 0; for (const t of terms) s += (profileVec.get(t) || 0) * (v.get(t) || 0);
+      return s;
+    },
   };
 }
+
+// 근거형 이유의 글(QueueRules): 이름은 칩에 들어가게 줄이고(활동 12자 · 직무 10자, 넘으면 앞부분 + "…"), 받침에 따라 와/과
+const MAX_ACTIVITY_NAME = 12, MAX_JOB_NAME = 10;
+function shortened(name, max) {
+  const t = String(name).trim(); const cps = [...t];
+  return cps.length <= max ? t : cps.slice(0, max - 1).join("").trimEnd() + "…";
+}
+function withParticle(name) {
+  const letters = [...name].filter((c) => /[\p{L}\p{N}]/u.test(c));
+  const last = letters[letters.length - 1]; if (!last) return "와";
+  let fin;
+  if (last >= "가" && last <= "힣") fin = (last.charCodeAt(0) - 0xAC00) % 28 !== 0;
+  else if (last >= "0" && last <= "9") fin = "013678".includes(last);
+  else { const l = name.toLowerCase().replace(/[^\p{L}\p{N}]+$/u, ""); fin = /(l|m|n|ng)$/.test(l); }
+  return fin ? "과" : "와";
+}
+const jobReason = (src) => { const n = shortened(src.name, MAX_JOB_NAME); return `${src.desired ? "희망 직무" : "현직업"} '${n}'${withParticle(n)} 맞아요`; };
+const similarReason = (e) => { const n = shortened(e.a.name || e.a.program, MAX_ACTIVITY_NAME); return `${e.rel === "LIKED" ? "관심 표시한" : "신청한"} ${n}${withParticle(n)} 비슷해요`; };
+// 직무 하나의 출처: 낱말 줄의 "고른 직무"(비면 낱말 자신)와 희망/현직업(무게 1.0 · 0.6은 희망, 0.7 · 0.4는 현직업)
+const jobSource = (j) => ({ name: (j.src || "").trim() || j.text.trim(), desired: Number(j.w) === 1.0 || Number(j.w) === 0.6 });
 
 const byDeadline = (x, y) => (x.end ? x.end.getTime() : Infinity) - (y.end ? y.end.getTime() : Infinity) || x.a.id.localeCompare(y.a.id);
 // QueueRules.pick: 점수 순(비면 마감 순)으로 줄 세워 size개까지, 같은 시리즈는 PER_PROGRAM개까지(taken은 이미 센 수). deferred의 활동은 맨 뒤로 미룬다
@@ -546,9 +588,10 @@ function compute() {
   const empty = jobTerms.length === 0 && state.history.length === 0 && state.less.filter((l) => l.tag.trim()).length === 0 && members.size === 0 && followedPrograms.size === 0 && followedOrgs.size === 0;
 
   const fieldInterest = (tag) => {
-    const p = Math.max(0, ...jobTerms.filter((j) => matches(tag, j.text)).map((j) => Number(j.w)));
+    const hit = jobTerms.filter((j) => matches(tag, j.text)).reduce((best, j) => (!best || Number(j.w) > Number(best.w)) ? j : best, null);
+    const p = Math.max(0, hit ? Number(hit.w) : 0);
     const hh = squash(fieldH[norm(tag)] || 0);
-    return hh >= 0 ? 1 - (1 - p) * (1 - hh) : Math.max(-1, p + hh);
+    return { v: hh >= 0 ? 1 - (1 - p) * (1 - hh) : Math.max(-1, p + hh), profile: p, history: hh, job: hit ? jobSource(hit) : null };
   };
   const membership = (orgId) => {
     if (!orgId) return null;
@@ -576,11 +619,23 @@ function compute() {
   const profile = new Map();
   for (const j of jobTerms) for (const t of tokenize(j.text)) profile.set(t.term, Math.max(profile.get(t.term) ?? -Infinity, Number(j.w)));
   const cm = buildContent(corpus, historyWeights, profile, W);
+  // 이유의 근거 기록: 관계가 있는(관심 있어요 · 신청 · 확정) 양의 기록과 감쇠한 가중치. 같은 활동은 관계가 강한 것 하나
+  const evidence = events.filter((h) => HISTORY_KINDS[h.kind][2] && W[HISTORY_KINDS[h.kind][1]] > 0)
+    .map((h) => ({ a: acts[h.act], rel: HISTORY_KINDS[h.kind][2], weight: W[HISTORY_KINDS[h.kind][1]] * decay(h.days) }));
+  const other = (cand, past) => past.id !== cand.id && past.program !== cand.program;
+  const strongestOf = (cand, cond) => evidence.filter((e) => other(cand, e.a) && cond(e.a))
+    .reduce((best, e) => (!best || e.weight > best.weight || (e.weight === best.weight && e.a.id > best.a.id)) ? e : best, null);
+  const jobSources = new Map(); // 출처(이름 · 희망/현직업)마다 그 낱말
+  for (const j of jobTerms) {
+    const src = jobSource(j); const key = `${src.desired ? 1 : 0}|${src.name}`;
+    if (!jobSources.has(key)) jobSources.set(key, { src, terms: new Set() });
+    tokenize(j.text).forEach((t) => jobSources.get(key).terms.add(t.term));
+  }
 
   const results = [];
   for (const { a, endDate } of cands) {
-    const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1] - x[1]);
-    const field = fields.length ? fields[0][1] : 0;
+    const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1].v - x[1].v);
+    const field = fields.length ? fields[0][1].v : 0;
     const kind = squash(kindH[a.kind] || 0);
     const member = membership(a.org);
     const followProgram = followedPrograms.has(a.program);
@@ -601,16 +656,39 @@ function compute() {
     else if (atParent >= W.REASON_THRESHOLD && parent) orgReason = `같은 ${parent.name} 그룹`;
 
     const content = empty ? 0 : cm.score(a.id);
-    const fieldReasons = fields.filter(([t, v]) => v >= W.REASON_THRESHOLD && !(norm(t) in less)).map(([t]) => t);
+    const shownFields = fields.filter(([t, f]) => f.v >= W.REASON_THRESHOLD && !(norm(t) in less));
+    // 분야 이유: 프로필 쪽 ≥ 기록 쪽이면 맞은 직무, 아니면 그 분야의 가장 무거운 근거 기록, 없으면 맞은 직무, 아니면 분야 이름
+    const fieldReasons = shownFields.map(([t, f]) => {
+      if (f.job && f.profile >= f.history) return jobReason(f.job);
+      const e = strongestOf(a, (past) => tagsOf(past).some((x) => norm(x) === norm(t)));
+      return e ? similarReason(e) : f.job ? jobReason(f.job) : t;
+    });
+    // 내용 이유: 사용자 벡터에 가장 크게 보탠 쪽(기록 활동 하나 vs 직무 하나, 같으면 활동). 못 정하면 예전 낱말 둘
     let contentReason = null;
     if (content >= W.CONTENT_THRESHOLD) {
-      const shown = new Set(fieldReasons.map(norm));
-      const words = cm.topWords(a.id).filter((w) => !shown.has(norm(w))).slice(0, 2);
-      if (words.length) contentReason = words.join("·");
+      const shares = cm.historyShares(a.id);
+      const byAct = new Map();
+      for (const e of evidence) {
+        if (!other(a, e.a) || !((shares.get(e.a.id) || 0) > 0)) continue;
+        const cur = byAct.get(e.a.id);
+        if (!cur || RELATION_ORDER.indexOf(e.rel) < RELATION_ORDER.indexOf(cur.rel)) byAct.set(e.a.id, e);
+      }
+      let past = null;
+      for (const [id, e] of byAct) { const sh = shares.get(id); if (!past || sh > past.share || (sh === past.share && id > past.e.a.id)) past = { e, share: sh }; }
+      let job = null;
+      for (const { src, terms } of jobSources.values()) { const sh = cm.profileShare(a.id, terms); if (sh > 0 && (!job || sh > job.share)) job = { src, share: sh }; }
+      if (past && (!job || past.share >= job.share)) contentReason = similarReason(past.e);
+      else if (job) contentReason = jobReason(job.src);
+      else {
+        const shown = new Set(shownFields.map(([t]) => norm(t)));
+        const words = cm.topWords(a.id).filter((w) => !shown.has(norm(w))).slice(0, 2);
+        if (words.length) contentReason = words.join("·");
+      }
     }
+    const kindReason = () => { const e = strongestOf(a, (past) => past.kind === a.kind); return e ? similarReason(e) : KINDS[a.kind]; };
     const daysLeft = endDate ? (endDate - now) / 86400000 : null;
     const near = daysLeft !== null && daysLeft >= 0 && daysLeft <= W.DEADLINE_DAYS;
-    const interests = [orgReason, ...fieldReasons, contentReason, kind >= W.REASON_THRESHOLD ? KINDS[a.kind] : null].filter(Boolean);
+    const interests = [...new Set([orgReason, ...fieldReasons, contentReason, kind >= W.REASON_THRESHOLD ? kindReason() : null].filter(Boolean))];
     const reasons = [...interests.slice(0, 2), ...(near ? [`${endDate.getMonth() + 1}월 ${endDate.getDate()}일 마감`] : [])];
     const lessV = Math.min(1, tagsOf(a).reduce((s, t) => s + (less[norm(t)] || 0), 0));
     const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, content: W.CONTENT_POINTS * content, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV };
@@ -640,6 +718,7 @@ function renderInputs() {
   $("today").value = state.today;
   $("jobs").innerHTML = state.jobs.map((j, i) => `<div class="row job">
     <label for="job-t-${i}">낱말<input id="job-t-${i}" data-k="jobs.${i}.text" value="${esc(j.text)}"></label>
+    <label for="job-s-${i}">고른 직무(이유에 쓰는 이름)<input id="job-s-${i}" data-k="jobs.${i}.src" value="${esc(j.src || "")}" placeholder="${esc(j.text)}"></label>
     <label for="job-w-${i}">무게<select id="job-w-${i}" data-k="jobs.${i}.w" data-num>${JOB_PRESETS.map(([n, w]) => `<option value="${w}"${Number(j.w) === w ? " selected" : ""}>${n} ${w}</option>`).join("")}</select></label>
     <button type="button" class="icon" data-del="jobs.${i}" aria-label="낱말 지우기">✕</button></div>`).join("");
   const progs = [...new Set(state.acts.map((a) => a.program).filter(Boolean))];
@@ -925,7 +1004,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.followOrg) { const o = t.dataset.followOrg; const f = state.followOrgs || []; state.followOrgs = f.includes(o) ? f.filter((x) => x !== o) : [...f, o]; return update(true); }
   if (t.dataset.member) { const id = t.dataset.member; state.memberOrgs = state.memberOrgs.includes(id) ? state.memberOrgs.filter((m) => m !== id) : [...state.memberOrgs, id]; return update(true); }
   const id = () => Math.random().toString(36).slice(2, 8);
-  if (t.id === "add-job") { state.jobs.push({ text: "", w: 1.0 }); return update(true); }
+  if (t.id === "add-job") { state.jobs.push({ text: "", src: "", w: 1.0 }); return update(true); }
   if (t.id === "add-hist" && state.acts.length) { state.history.push({ act: state.acts[0].id, kind: "LIKE", days: 0 }); return update(true); }
   if (t.id === "add-less") { state.less.push({ tag: "", days: 0 }); return update(true); }
   if (t.id === "add-act") { state.acts.push({ id: "a" + id(), name: "새 활동", program: "새 시리즈", kind: "MEETUP", tags: "", desc: "", org: "", end: state.today, elig: "" }); return update(true); }
