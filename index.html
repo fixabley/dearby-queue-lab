@@ -24,6 +24,7 @@
   --bar-deadline: #c08a1c;
   --bar-less: #b3322f;
   --bar-content: #c0507a;
+  --bar-lexical: #e08ab0;
   --bar-status: #5f6b78;
   --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -32,14 +33,14 @@
   :root:not([data-theme="light"]) {
     --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
     --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-status: #9aa6b3;
+    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-lexical: #f4c2d6; --bar-status: #9aa6b3;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
   --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-status: #9aa6b3;
+  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-lexical: #f4c2d6; --bar-status: #9aa6b3;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -152,7 +153,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
 <header>
   <div>
     <h1>Dearby 맞춤 대기열 실험실</h1>
-    <p>서버의 맞춤 대기열 규칙(QueueRules · TasteMatch · ContentMatch, PR #284 · #285 · #286 · #287 · #291 · #300 · #305)을 옮긴 계산기입니다. 서버는 활동 글을 KURE-v1 임베딩으로 바꿔 취향 유사도와 MMR을 재지만 브라우저에서는 그 모델을 돌릴 수 없어, 이 데모는 <b>임베딩 대신 BM25 낱말 벡터</b>를 같은 자리에 넣어 계산합니다(아래 "점수 식" › 데모의 근사). 카드 하나는 시리즈 하나이고, 같은 시리즈 이름의 후보 활동(여러 기수)은 한 카드로 묶입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
+    <p>서버의 맞춤 대기열 규칙(QueueRules · TasteMatch · ContentMatch, PR #284 · #285 · #286 · #287 · #291 · #300 · #305 · #321)을 옮긴 계산기입니다. 서버의 취향 유사도는 <b>임베딩(KURE-v1) 0.7 + 낱말 BM25 0.3</b>을 합친 값이고 MMR은 임베딩으로 잽니다. 브라우저에서는 그 모델을 돌릴 수 없어, 이 데모는 임베딩 자리에 <b>BM25 낱말 문서 벡터</b>를 넣어 계산합니다(아래 "점수 식" › 데모의 근사). 낱말 쪽은 서버와 같은 BM25 사용자 벡터입니다. 카드 하나는 시리즈 하나이고, 같은 시리즈 이름의 후보 활동(여러 기수)은 한 카드로 묶입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
   </div>
   <div class="head-actions">
     <div class="tabs" role="tablist" aria-label="보기">
@@ -246,7 +247,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <div class="rows" id="less"></div>
         <button type="button" id="add-less" class="icon">+ 분야</button>
       </details>
-      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 찜이면 "찜한 시리즈"가 이유입니다(카드에 보이는 대표 활동 자신에 남긴 기록은 세지 않아요. 찜한 활동의 카드에는 "찜한 시리즈"가 붙지 않습니다). 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 후보에서 빠집니다(후보 활동이 남지 않은 시리즈도 빠져요). 캘린더에만·지금 상태는 쓰지 않습니다. 찜이 관심 신호(0.4)이고, 자격은 자격 안 됨 반응으로 받습니다.</p>
+      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(찜·신청·확정은 더하고 관심 없어요·신청 취소는 빼요. 끝까지 봄·자세히 봄·일찍 넘김은 넣지 않아요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 찜이면 "찜한 시리즈"가 이유입니다(카드에 보이는 대표 활동 자신에 남긴 기록은 세지 않아요. 찜한 활동의 카드에는 "찜한 시리즈"가 붙지 않습니다). 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 후보에서 빠집니다(후보 활동이 남지 않은 시리즈도 빠져요). 캘린더에만·지금 상태는 쓰지 않습니다. 찜이 관심 신호(0.4)이고, 자격은 자격 안 됨 반응으로 받습니다.</p>
     </section>
 
     <section class="panel" aria-labelledby="h-weights">
@@ -280,13 +281,14 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
       </details>
       <details>
         <summary>점수 식</summary>
-        <p class="hint">활동 점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 25 × 취향 유사도(취향을 못 만들거나 끄면 그 자리에 15 × 내용 관심) + 5 × (모집 중이고 14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1) + 모집 상태(모집 중 15 · 예정 8 · 마감·끝남 0). 후보는 모든 공개 활동(모집 중 · 예정 · 마감 · 끝남)이고, 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 빠집니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
+        <p class="hint">활동 점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 25 × 취향 유사도(= 0.7 × 임베딩 코사인 + 0.3 × 내용 관심, 임베딩이 없으면 내용 관심만) + 5 × (모집 중이고 14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1) + 모집 상태(모집 중 15 · 예정 8 · 마감·끝남 0). 후보는 모든 공개 활동(모집 중 · 예정 · 마감 · 끝남)이고, 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 빠집니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
         <p class="hint">시리즈로 묶기: 활동마다 점수와 관심 이유를 매긴 뒤 시리즈 이름이 같은 후보 활동을 카드 한 장으로 묶습니다(같은 시리즈 둘까지 제한은 없어졌어요). 대표 활동 = 모집 중(마감 가까운 것) → 모집 예정(시작 가까운 것) → 마감·끝남(기준일이 늦은 것, 데모는 기준일로 마감일을 쓰고 모르면 끝) → 활동 id. 시리즈 점수 = 후보 활동 점수의 최댓값, 관심 이유 = 그 최고점 활동의 것(같으면 대표 순서로 앞선 활동)이고, 마지막 날짜 이유는 최고점 활동이 아니라 대표 활동으로 읽을 때 짓습니다. 시리즈 순서 = 시리즈 점수 높은 순 → 대표의 모집 상태 순 → 대표 id. 프로필·기록·팔로우가 모두 비면 점수 없이 대표의 모집 상태 순이고 내용 관심은 쓰지 않습니다.</p>
-        <p class="hint">취향 유사도(포스터 ②③) = cos(취향 벡터, 활동 벡터), −1~1. 취향 벡터 = 정규화(긍정 기록 벡터의 가중 평균 − 부정 기록 벡터의 가중 평균). 긍정은 확정된 신청 1.0 · 신청 0.7 · 찜 0.4, 부정은 관심 없어요 −0.3 · 신청 취소 −0.2이고, 각각 0.5^(지난 날/90)로 감쇠해 활동마다 더한 값이 무게입니다(끝까지 봄 · 자세히 봄 · 일찍 넘김은 넣지 않아요). 기록이 없으면 직무 벡터의 가중 평균(희망 1.0 · 현직업 0.7). 25점은 포스터 식의 0.25 × 규칙 100점입니다. 이유는 기록으로 만든 취향이면 근거 기록 가운데 감쇠 가중치 × cos(그 활동, 후보)가 가장 큰 것("찜한 ○○와 비슷해요"), 직무로 만든 취향이면 cos가 가장 큰 직무("희망 직무 '…'와 맞아요")입니다.</p>
+        <p class="hint">취향 유사도(server #321, 2026-11-24 "임베딩과 낱말을 함께") = (1 − β) × e + β × l, β = 0.3. e는 아래 임베딩 쪽 코사인(−1~1), l은 아래 "내용 관심"(낱말 BM25, 0~1)이고 두 코사인을 정규화 없이 섞습니다(서버 데이터에서 요청 안 표준편차가 비슷해 β가 곧 두 쪽의 몫). 임베딩이 없거나 취향 벡터를 만들지 못하면 l만 25점 자리에 씁니다. 관심 없어요 · 신청 취소는 두 쪽에 다 들어가지만 l은 0 아래를 자르므로 내리는 일은 e가 맡습니다. 결과 막대의 진한 분홍은 e의 몫, 연한 분홍은 l의 몫입니다.</p>
+        <p class="hint">임베딩 쪽(포스터 ②③) e = cos(취향 벡터, 활동 벡터), −1~1. 취향 벡터 = 정규화(긍정 기록 벡터의 가중 평균 − 부정 기록 벡터의 가중 평균). 긍정은 확정된 신청 1.0 · 신청 0.7 · 찜 0.4, 부정은 관심 없어요 −0.3 · 신청 취소 −0.2이고, 각각 0.5^(지난 날/90)로 감쇠해 활동마다 더한 값이 무게입니다(끝까지 봄 · 자세히 봄 · 일찍 넘김은 넣지 않아요). 기록이 없으면 직무 벡터의 가중 평균(희망 1.0 · 현직업 0.7). 25점은 포스터 식의 0.25 × 규칙 100점입니다. 이유는 합친 취향 유사도가 0.1 이상일 때 임베딩 쪽 근거를 먼저 봅니다: 기록으로 만든 취향이면 근거 기록 가운데 감쇠 가중치 × cos(그 활동, 후보)가 가장 큰 것("찜한 ○○와 비슷해요"), 직무로 만든 취향이면 cos가 가장 큰 직무("희망 직무 '…'와 맞아요"). 그 근거를 정하지 못하면 낱말 쪽 근거(아래 "내용 관심", 낱말 0.3 이상일 때)를 씁니다. 글과 모양은 같습니다.</p>
         <p class="hint">MMR(포스터 ④): 점수 순으로 줄 세운 시리즈를 앞에서부터 한 장씩, 0.7 × 점수/100 − 0.3 × (이미 고른 카드와의 최대 코사인)이 가장 큰 것으로 고릅니다. 시리즈 벡터는 그 시리즈 후보 활동 벡터의 평균이고, 이미 고른 카드는 이번 묶음 바로 앞의 카드 한 장으로 시작해 고를 때마다 늘어납니다. 다음 묶음의 다시 넣기는 넣은 때가 같은 것끼리만 MMR로 고릅니다. 결과의 각 카드 아래에 이 계산과 점수 순 순위를 적었습니다.</p>
-        <p class="hint"><b>데모의 근사</b>: 서버는 활동 글(이름 · 시리즈 · 조직 · 종류 · 분야 · 소개 · 대상 · 지역 · 설명)을 KURE-v1(1024차원, 서버 안 ONNX)로 임베딩하고 직무 분류 글도 임베딩합니다. 브라우저에서는 그 모델을 돌릴 수 없어 이 데모는 <b>임베딩 대신</b> 아래 "내용 관심"의 BM25 문서 벡터 d(활동 · 시리즈 · 분야 · 소개 · 조직 이름의 낱말)를 활동 벡터로, 직무 낱말의 IDF 벡터를 직무 벡터로 씁니다. 그래서 낱말이 겹치지 않으면 뜻이 비슷해도 코사인이 0이고(임베딩은 "클라우드"와 "쿠버네티스"를 가깝게 봅니다), 코사인의 크기도 다릅니다(KURE의 시리즈 사이 코사인은 0.44~0.78, 낱말 벡터는 대개 0~0.4). 그래서 취향 이유의 코사인 하한을 서버(0.75 · 0.55)보다 낮게(0.2 · 0.1) 두었고, MMR의 효과도 서버보다 들쭉날쭉합니다. 식 · 무게 · 단계는 서버와 같습니다. 서버는 임베딩이 없는 활동만 내용 관심 BM25로 내려가며, 이 데모에서 가중치의 "임베딩 있음"을 0으로 두면 그 폴백(내용 관심 15점, MMR은 순서를 바꾸지 않음)을 볼 수 있습니다.</p>
+        <p class="hint"><b>데모의 근사</b>: 서버는 활동 글(이름 · 시리즈 · 조직 · 종류 · 분야 · 소개 · 대상 · 지역 · 설명)을 KURE-v1(1024차원, 서버 안 ONNX)로 임베딩하고 직무 분류 글도 임베딩합니다. 브라우저에서는 그 모델을 돌릴 수 없어 이 데모는 <b>임베딩 대신</b> 아래 "내용 관심"의 BM25 문서 벡터 d(활동 · 시리즈 · 분야 · 소개 · 조직 이름의 낱말)를 활동 벡터로, 직무 낱말의 IDF 벡터를 직무 벡터로 씁니다. 그래서 낱말이 겹치지 않으면 뜻이 비슷해도 코사인이 0이고(임베딩은 "클라우드"와 "쿠버네티스"를 가깝게 봅니다), 코사인의 크기도 다릅니다(KURE의 시리즈 사이 코사인은 0.44~0.78, 낱말 벡터는 대개 0~0.4). 그래서 취향 이유의 코사인 하한을 서버(0.75 · 0.55)보다 낮게(0.2 · 0.1) 두었고, MMR의 효과도 서버보다 들쭉날쭉합니다. 식 · 무게 · 단계는 서버와 같습니다. 데모에서는 임베딩 자리와 낱말 쪽이 같은 낱말에서 나와 둘이 서버보다 더 닮았고(서버에서 둘의 상관은 0.4~0.8), 그래서 β를 바꿔도 순서가 서버보다 덜 움직입니다. 가중치의 "임베딩 있음"을 0으로 두면 임베딩이 없을 때(취향 유사도는 낱말만 25점, MMR은 순서를 바꾸지 않음)를 볼 수 있습니다.</p>
         <p class="hint">조직·시리즈 관심 = clamp(max(소속, 조직 팔로우, max(기록의 조직, 0)) + max(시리즈, 0) + min(기록의 조직, 0) + min(시리즈, 0), −1, 1). 팔로우한 시리즈는 시리즈 관심 1.0.</p>
-        <p class="hint">내용 관심(폴백) = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 사용자 벡터에 가장 크게 보탠 근거가 이유가 됩니다. 기록 활동 하나(그 활동이 u에 더한 배수 × 그 활동 벡터 · d)와 직무 하나(p 가운데 그 직무의 낱말만 · d) 가운데 큰 쪽(같으면 기록)이 "신청한 ○○와 비슷해요"·"희망 직무 '…'와 맞아요"가 되고, 정하지 못하면 u·d가 큰 낱말 둘입니다.</p>
+        <p class="hint">내용 관심(취향 유사도의 낱말 쪽 l) = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 기록은 취향 벡터와 같은 것(확정 · 신청 · 찜, 관심 없어요 · 신청 취소)만 넣고 끝까지 봄 · 자세히 봄 · 일찍 넘김은 넣지 않습니다. 낱말은 숫자만인 것(연도 · 기수 번호)을 버립니다. 임베딩 쪽 근거가 없고 내용 관심이 문턱 이상이면 사용자 벡터에 가장 크게 보탠 근거가 이유가 됩니다. 기록 활동 하나(그 활동이 u에 더한 배수 × 그 활동 벡터 · d)와 직무 하나(p 가운데 그 직무의 낱말만 · d) 가운데 큰 쪽(같으면 기록)이 "신청한 ○○와 비슷해요"·"희망 직무 '…'와 맞아요"가 되고, 정하지 못하면 u·d가 큰 낱말 둘입니다.</p>
         <p class="hint">이유 규칙(근거형): 점수·문턱·차례·개수(관심 이유 둘 + 마감 하나)는 그대로고 글만 근거를 보입니다. 분야 이유는 직무 쪽(프로필) ≥ 기록 쪽이면 "희망 직무 '…'와 맞아요"·"현직업 '…'와 맞아요", 아니면 그 분야가 붙은 근거 기록 가운데 가장 무거운 것으로 "찜한 ○○와 비슷해요"·"신청한 ○○와 비슷해요", 근거가 없으면 맞은 직무, 아니면 분야 이름입니다. 종류 이유도 같은 종류의 가장 무거운 근거 기록, 없으면 종류 이름입니다. 근거 기록은 찜·신청·확정된 신청만(약한 신호와 부정 기록은 안 써요)이고 그 후보 자신과 같은 시리즈의 기록은 뺍니다. 같은 글이 둘이면 하나로 셉니다. 활동 이름은 12자, 직무 이름은 10자를 넘으면 앞부분과 "…"로 줄이고, 마지막 글자 받침에 따라 와/과를 붙입니다.</p>
       </details>
     </section>
@@ -314,15 +316,15 @@ const STRENGTH = { PARTICIPATED: 2, APPLIED: 1 };
 const RELATION_REASONS = { CONFIRMED: "지난 기수에 참여했어요", APPLIED: "지난 기수에 신청했어요", LIKED: "찜한 시리즈" };
 const RELATION_ORDER = ["CONFIRMED", "APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
-  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], TASTE_POINTS: [25, "취향 유사도(임베딩 대신 낱말 벡터)"], CONTENT_POINTS: [15, "내용(폴백 BM25)"], DEADLINE_POINTS: [5, "마감 임박(모집 중만)"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
+  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], TASTE_POINTS: [25, "취향 유사도(임베딩 + 낱말)"], LEXICAL_SHARE: [0.3, "취향 유사도에서 낱말(BM25)의 몫 β"], DEADLINE_POINTS: [5, "마감 임박(모집 중만)"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
   OPEN_POINTS: [15, "모집 상태: 모집 중"], UPCOMING_POINTS: [8, "모집 상태: 모집 예정"], CLOSED_POINTS: [0, "모집 상태: 마감·끝남"],
   PARTICIPATED: [1.0, "기록: 확정된 신청"], APPLIED: [0.7, "기록: 신청"], CANCELLED: [-0.2, "기록: 신청 취소"],
   LIKE: [0.4, "반응: 찜"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
   HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], SIZE: [10, "고르는 수(시리즈)"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
   MEMBER_SELF: [1.0, "소속: 같은 조직"], MEMBER_RELATED: [0.6, "소속: 상위·하위 조직"], FOLLOWED_PROGRAM: [1.0, "팔로우한 시리즈의 시리즈 관심"], FOLLOWED_ORGANIZATION: [1.0, "팔로우한 조직의 조직 관심"],
   ORGANIZATION_SHARE: [0.6, "기록→여는 조직"], PARENT_SHARE: [0.3, "기록→바로 위 조직"], BROAD_CHILDREN: [10, "넓은 상위 조직 기준(하위 수)"],
-  K1: [1.2, "내용: k1(낱말 빈도 포화)"], B: [0.75, "내용: b(문서 길이 보정)"], GAMMA: [1.0, "내용: γ(부정 기록을 빼는 정도)"], PROFILE_WEIGHT: [1.0, "내용: 직무 낱말 p의 무게"], CONTENT_THRESHOLD: [0.3, "내용 이유로 쓰는 하한"],
-  USE_TASTE: [1, "임베딩 있음(0이면 임베딩이 없을 때의 폴백: 내용 관심 BM25 15점, MMR 없음)"], MMR_LAMBDA: [0.7, "MMR λ(점수 쪽 무게, 1이면 점수 순 그대로)"],
+  K1: [1.2, "내용: k1(낱말 빈도 포화)"], B: [0.75, "내용: b(문서 길이 보정)"], GAMMA: [1.0, "내용: γ(부정 기록을 빼는 정도)"], PROFILE_WEIGHT: [1.0, "내용: 직무 낱말 p의 무게"], CONTENT_THRESHOLD: [0.3, "낱말 쪽 이유로 쓰는 하한"],
+  USE_TASTE: [1, "임베딩 있음(0이면 임베딩이 없을 때: 취향 유사도는 낱말만 25점, MMR 없음)"], MMR_LAMBDA: [0.7, "MMR λ(점수 쪽 무게, 1이면 점수 순 그대로)"],
   TASTE_REASON_THRESHOLD: [0.1, "취향 이유로 쓰는 하한"], TASTE_SIMILAR_THRESHOLD: [0.2, "취향 이유: 기록 활동과 코사인 하한(서버 KURE 0.75)"], TASTE_JOB_THRESHOLD: [0.1, "취향 이유: 직무와 코사인 하한(서버 KURE 0.55)"],
 };
 
@@ -426,13 +428,13 @@ function ineligible(act, status) {
   return null;
 }
 
-// 낱말 나누기(ContentTokenizer.tokens): NFC, 글자·숫자가 아닌 것으로 나누기, 소문자, 한 글자 버림, 불용어 버림,
+// 낱말 나누기(ContentTokenizer.tokens): NFC, 글자·숫자가 아닌 것으로 나누기, 소문자, 한 글자 · 숫자만인 낱말(연도 · 기수 번호) 버림, 불용어 버림,
 // 세 글자 이상 낱말은 이어진 한글 두 글자 조각도 더한다. 낱말마다 원래 낱말(word)을 함께 둔다
 const isHangul = (c) => c >= "가" && c <= "힣";
 function tokenize(text) {
   const out = [];
   for (const word of String(text).normalize("NFC").split(/[^\p{L}\p{N}]+/u)) {
-    if (word.length < 2) continue;
+    if (word.length < 2 || /^\p{N}+$/u.test(word)) continue;
     const lower = word.toLowerCase();
     const stop = STOP_WORDS.has(lower);
     if (!stop) out.push({ term: lower, word });
@@ -701,7 +703,9 @@ function compute() {
   // 내용 관심: 말뭉치 = 후보 + 기록에 쓰인 활동(모집이 끝난 것 포함)
   const textOf = (a) => [a.name, a.program, tagsOf(a).join(" "), a.desc || "", orgs[a.org]?.name || ""].join("\n");
   const corpus = [...cands.map((c) => c.a), ...events.map((h) => acts[h.act])].map((a) => ({ id: a.id, text: textOf(a) }));
-  const historyWeights = events.map((h) => [h.act, W[HISTORY_KINDS[h.kind][1]] * decay(h.days)]);
+  // 낱말 쪽 사용자 벡터에도 취향 벡터와 같은 기록(확정 · 신청 · 찜, 관심 없어요 · 신청 취소)만 넣는다(server #321)
+  const TASTE_KINDS = new Set(["PARTICIPATED", "APPLIED", "LIKE", "DISMISS", "CANCELLED"]);
+  const historyWeights = events.filter((h) => TASTE_KINDS.has(h.kind)).map((h) => [h.act, W[HISTORY_KINDS[h.kind][1]] * decay(h.days)]);
   const profile = new Map();
   for (const j of jobTerms) for (const t of tokenize(j.text)) profile.set(t.term, Math.max(profile.get(t.term) ?? -Infinity, Number(j.w)));
   const cm = buildContent(corpus, historyWeights, profile, W);
@@ -720,7 +724,6 @@ function compute() {
 
   // 취향 벡터(TasteMatch, 포스터 ②): normalize(긍정(확정 · 신청 · 찜) 가중 평균 − 부정(관심 없어요 · 신청 취소) 가중 평균), 감쇠 0.5^(일/반감기).
   // 서버는 활동의 KURE-v1 임베딩을 쓰고 데모는 그 자리에 문서 벡터 d를 쓴다. 기록 벡터가 없으면 직무(희망 1.0 · 현직업 0.7)의 벡터 평균
-  const TASTE_KINDS = new Set(["PARTICIPATED", "APPLIED", "LIKE", "DISMISS", "CANCELLED"]);
   const wa = new Map();
   for (const h of events) if (TASTE_KINDS.has(h.kind) && cm.vector(h.act)) wa.set(h.act, (wa.get(h.act) || 0) + W[HISTORY_KINDS[h.kind][1]] * decay(h.days));
   const posV = vmean([...wa].filter(([, w]) => w > 0).map(([id, w]) => [cm.vector(id), w]));
@@ -771,9 +774,13 @@ function compute() {
     else if (atOrg >= W.REASON_THRESHOLD) orgReason = `${orgs[a.org]?.name}에 관심을 보였어요`;
     else if (atParent >= W.REASON_THRESHOLD && parent) orgReason = `같은 ${parent.name} 그룹`;
 
-    // 취향 유사도 = cos(취향, d)(−1~1). 끄거나 취향을 만들지 못하면 내용 관심(BM25) 15점으로 내려간다
-    const tasteV = useTaste ? vdot(taste, cm.vector(a.id)) : null;
-    const content = empty || tasteV !== null ? 0 : cm.score(a.id);
+    // 취향 유사도(server #321, 임베딩 + 낱말 함께) = (1 − β) × e + β × l. e = cos(취향, 활동)(서버는 KURE 임베딩, 데모는 그 자리에 낱말 문서 벡터),
+    // l = 내용 관심(BM25 사용자 벡터 · 문서 벡터, 0~1). 임베딩을 끄거나 취향을 만들지 못하면 l만 25점 자리에
+    const embed = useTaste ? vdot(taste, cm.vector(a.id)) : null;
+    const lexical = empty ? 0 : cm.score(a.id);
+    const beta = Number(W.LEXICAL_SHARE);
+    const tasteV = empty ? null : embed !== null ? (1 - beta) * embed + beta * lexical : lexical;
+    const content = lexical;
     const shownFields = fields.filter(([t, f]) => f.v >= W.REASON_THRESHOLD && !(norm(t) in less));
     // 분야 이유: 프로필 쪽 ≥ 기록 쪽이면 맞은 직무, 아니면 그 분야의 가장 무거운 근거 기록, 없으면 맞은 직무, 아니면 분야 이름
     const fieldReasons = shownFields.map(([t, f]) => {
@@ -781,12 +788,12 @@ function compute() {
       const e = strongestOf(a, (past) => tagsOf(past).some((x) => norm(x) === norm(t)));
       return e ? similarReason(e) : f.job ? jobReason(f.job) : t;
     });
-    // 내용 이유: 사용자 벡터에 가장 크게 보탠 쪽(기록 활동 하나 vs 직무 하나, 같으면 활동). 못 정하면 예전 낱말 둘
+    // 취향의 근거(합친 취향 유사도가 하한 이상일 때): 임베딩 쪽의 근거가 있으면 그것, 없으면 낱말 쪽의 근거(낱말이 하한 이상일 때)
     let contentReason = null;
-    if (tasteV !== null) {
-      // 취향의 근거: 기록으로 만든 취향이면 근거 기록 가운데 감쇠한 가중치 × cos(그 활동, 후보)가 가장 큰 것(코사인 하한 이상),
-      // 직무로 만든 취향이면 cos(직무, 후보)가 가장 큰 직무(하한 이상). 정하지 못하면 이유를 쓰지 않는다
-      if (tasteV >= W.TASTE_REASON_THRESHOLD) {
+    if (tasteV !== null && tasteV >= W.TASTE_REASON_THRESHOLD) {
+      // 임베딩 쪽: 기록으로 만든 취향이면 근거 기록 가운데 감쇠한 가중치 × cos(그 활동, 후보)가 가장 큰 것(코사인 하한 이상),
+      // 직무로 만든 취향이면 cos(직무, 후보)가 가장 큰 직무(하한 이상)
+      if (embed !== null) {
         if (tasteFrom === "history") {
           let best = null;
           for (const e of evidence) {
@@ -801,7 +808,9 @@ function compute() {
           if (best) contentReason = jobReason(best.j.src);
         }
       }
-    } else if (content >= W.CONTENT_THRESHOLD) {
+    }
+    // 낱말 쪽: 사용자 벡터에 가장 크게 보탠 쪽(기록 활동 하나 vs 직무 하나, 같으면 활동). 못 정하면 낱말 둘
+    if (!contentReason && tasteV !== null && tasteV >= W.TASTE_REASON_THRESHOLD && content >= W.CONTENT_THRESHOLD) {
       const shares = cm.historyShares(a.id);
       const byAct = new Map();
       for (const e of evidence) {
@@ -830,9 +839,9 @@ function compute() {
       : followProgram ? "지난 기수 · 다음 기수가 열리면 알림" : "지난 기수 · 다음 기수는 팔로우로 알림";
     const interests = [...new Set([orgReason, ...fieldReasons, contentReason, kind >= W.REASON_THRESHOLD ? kindReason() : null].filter(Boolean))].slice(0, 2);
     const lessV = Math.min(1, tagsOf(a).reduce((s, t) => s + (less[norm(t)] || 0), 0));
-    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, taste: tasteV === null ? 0 : W.TASTE_POINTS * tasteV, content: W.CONTENT_POINTS * content, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV, status: W[status + "_POINTS"] };
+    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, taste: embed === null || tasteV === null ? 0 : W.TASTE_POINTS * (1 - beta) * embed, content: tasteV === null ? 0 : embed === null ? W.TASTE_POINTS * lexical : W.TASTE_POINTS * beta * lexical, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV, status: W[status + "_POINTS"] };
     const points = parts.field + parts.kind + parts.org + parts.taste + parts.content + parts.deadline + parts.less + parts.status;
-    results.push({ a, points, parts, interests, statusReason, end: endDate, start: startDate, status, raw: { field, kind, orgScore, content, taste: tasteV } });
+    results.push({ a, points, parts, interests, statusReason, end: endDate, start: startDate, status, raw: { field, kind, orgScore, content, taste: tasteV, embed } });
   }
   results.sort(empty ? byDeadline : (x, y) => y.points - x.points || byDeadline(x, y));
   // 시리즈로 묶기(QueueRules.pick): 대표 = 모집 상태 순으로 앞선 활동, 시리즈 점수 · 관심 이유 = 최고점 활동(같으면 대표 순서로 앞선 것)의 것.
@@ -922,11 +931,11 @@ function renderResult() {
   const r = compute();
   $("mode").textContent = r.empty ? "프로필과 기록이 비어 모집 상태 순" : "개인 맞춤";
   const moved = r.picks.filter((p, i) => p.mmr && p.mmr.scoreRank !== i + 1).length;
-  const tasteText = r.empty ? "" : r.tasteFrom === "history" ? "취향 벡터: 기록(긍정 − 부정)" : r.tasteFrom === "job" ? "취향 벡터: 직무(기록 없음)" : (Number(state.weights.USE_TASTE) === 0 ? "임베딩 없음 · 내용 관심 BM25로 폴백" : "취향을 만들 재료 없음 · 내용 관심 BM25");
+  const tasteText = r.empty ? "" : r.tasteFrom === "history" ? "취향 벡터: 기록(긍정 − 부정)" : r.tasteFrom === "job" ? "취향 벡터: 직무(기록 없음)" : (Number(state.weights.USE_TASTE) === 0 ? "임베딩 없음 · 취향 유사도는 낱말만" : "취향 벡터를 만들 재료 없음 · 취향 유사도는 낱말만");
   $("meta").innerHTML = `<span>후보 시리즈 <b>${r.series.length}</b>개 (활동 ${r.candidates}개)</span><span>고른 수 <b>${r.picks.length}</b>개</span><span>빠진 시리즈 <b>${r.excluded.filter((e) => e.tone === "warn").length}</b>개</span>${tasteText ? `<span>${tasteText}</span>` : ""}${r.picks.some((p) => p.mmr) ? `<span>MMR로 자리가 바뀐 카드 <b>${moved}</b>장</span>` : ""}`;
   const max = Math.max(1, ...r.picks.map((p) => Object.values(p.parts).filter((v) => v > 0).reduce((s, v) => s + v, 0)));
   $("picks").innerHTML = r.picks.map((p, i) => {
-    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["taste", "--bar-content", "취향"], ["content", "--bar-content", "내용(BM25)"], ["deadline", "--bar-deadline", "마감"], ["status", "--bar-status", "모집 상태"]];
+    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["taste", "--bar-content", "취향·임베딩 자리"], ["content", "--bar-lexical", "취향·낱말"], ["deadline", "--bar-deadline", "마감"], ["status", "--bar-status", "모집 상태"]];
     const bar = seg.filter(([k]) => p.parts[k] > 0).map(([k, c]) => `<span style="width:${(p.parts[k] / max) * 100}%;background:var(${c})"></span>`).join("");
     const legend = [...seg, ["less", "--bar-less", "덜 보기"]].filter(([k]) => Math.abs(p.parts[k]) > 0.05).map(([k, c, n]) => `<span><i style="background:var(${c})"></i>${n} ${fmt(p.parts[k])}</span>`).join("");
     const org = state.orgs.find((o) => o.id === p.a.org)?.name;
@@ -1141,12 +1150,12 @@ function renderTrace() {
   }).join("")}</div><p class="hint">직무 낱말로 생기는 분야 관심은 활동마다 따로 더해져 여기에는 나오지 않아요. 기록과 반응에서 생긴 관심만 보여요.</p>` : `<p class="empty">기록과 반응이 없어요.</p>`;
 
   const useTasteTop = r.tasteFrom && r.tasteTop.length;
-  $("h-vector").innerHTML = useTasteTop ? `취향 벡터 상위 낱말 <small>임베딩 대신 낱말 벡터 · 절댓값이 큰 10개</small>` : `사용자 벡터 상위 낱말 <small>u에서 절댓값이 큰 10개(BM25 폴백)</small>`;
+  $("h-vector").innerHTML = useTasteTop ? `취향 벡터 상위 낱말 <small>임베딩 대신 낱말 벡터 · 절댓값이 큰 10개</small>` : `사용자 벡터 상위 낱말 <small>u에서 절댓값이 큰 10개(취향 유사도의 낱말 쪽)</small>`;
   const top = useTasteTop ? r.tasteTop : r.userTop; const vmax = Math.max(1e-9, ...top.map(([, v]) => Math.abs(v)));
   $("trace-vector").innerHTML = top.length ? `<div class="ilist">${top.map(([t, v], i) => {
     const w = Math.abs(v) / vmax * 50;
     return `<div class="irow"><span class="itype">${i + 1}위</span><span>${esc(t)}</span><span class="ibar" aria-hidden="true"><span style="left:${v >= 0 ? 50 : 50 - w}%;width:${w}%;background:var(${v >= 0 ? "--bar-content" : "--bad"})"></span></span><span class="ival ${cls(v)}">${sgn(v)}</span></div>`;
-  }).join("")}</div><p class="hint">말뭉치 문서 ${r.corpusSize}개 · 낱말 ${r.vocabulary}종. ${useTasteTop ? `취향 벡터 = 정규화(긍정 기록 d의 가중 평균 − 부정 기록 d의 가중 평균)${r.tasteFrom === "job" ? "인데 기록이 없어 직무 벡터의 평균을 썼어요" : ""}. 서버에서는 이 자리가 KURE-v1 1024차원 임베딩이라 낱말로 풀어 볼 수 없어요. 음수는 관심 없어요 · 신청 취소로 밀린 낱말입니다.` : "u는 L2 정규화돼 있어 값의 제곱합이 1이에요. 음수는 관심 없어요 · 일찍 넘김 · 신청 취소로 밀린 낱말입니다."}</p>` : `<p class="empty">직무 낱말도 기록도 없어 u가 0 벡터예요(내용 관심은 모두 0).</p>`;
+  }).join("")}</div><p class="hint">말뭉치 문서 ${r.corpusSize}개 · 낱말 ${r.vocabulary}종. ${useTasteTop ? `취향 벡터 = 정규화(긍정 기록 d의 가중 평균 − 부정 기록 d의 가중 평균)${r.tasteFrom === "job" ? "인데 기록이 없어 직무 벡터의 평균을 썼어요" : ""}. 서버에서는 이 자리가 KURE-v1 1024차원 임베딩이라 낱말로 풀어 볼 수 없어요(취향 유사도의 0.7 몫. 나머지 0.3은 BM25 사용자 벡터 u와의 내용 관심). 음수는 관심 없어요 · 신청 취소로 밀린 낱말입니다.` : "u는 L2 정규화돼 있어 값의 제곱합이 1이에요. 음수는 관심 없어요 · 일찍 넘김 · 신청 취소로 밀린 낱말입니다."}</p>` : `<p class="empty">직무 낱말도 기록도 없어 u가 0 벡터예요(내용 관심은 모두 0).</p>`;
 
   $("trace-log").innerHTML = state.trace.map((e) => e.bundleMark ? `<li><b>${esc(e.name)}</b></li>` : `<li>${esc(e.name)} · ${esc(ACT_NAMES[e.kind])}${e.tag ? ` (${esc(e.tag)})` : ""} — 관심 ${e.diff.interest.length}개, 점수 ${e.diff.scores.length}개 바뀜</li>`).join("") || `<li class="empty" style="list-style:none">아직 동작이 없어요.</li>`;
 }
