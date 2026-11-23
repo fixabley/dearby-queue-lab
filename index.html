@@ -24,6 +24,7 @@
   --bar-deadline: #c08a1c;
   --bar-less: #b3322f;
   --bar-content: #c0507a;
+  --bar-status: #5f6b78;
   --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -31,14 +32,14 @@
   :root:not([data-theme="light"]) {
     --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
     --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae;
+    --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-status: #9aa6b3;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #131716; --panel: #1b201e; --ink: #e7ece9; --muted: #9aa5a0; --line: #2c3431;
   --accent: #4fc29b; --accent-soft: #173229; --warn: #e2a06a; --warn-soft: #36261a; --bad: #ef7d77;
-  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae;
+  --bar-field: #4fc29b; --bar-kind: #7ea6e6; --bar-org: #b993dc; --bar-deadline: #e0b04a; --bar-less: #ef7d77; --bar-content: #e58aae; --bar-status: #9aa6b3;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -251,7 +252,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     <section class="panel" aria-labelledby="h-acts">
       <h2 id="h-acts">후보 활동 <small>모집 중인 공개 활동 · 소개는 내용 관심의 글</small></h2>
       <div class="act-table"><table>
-        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>소개</th><th>여는 조직</th><th>마감</th><th>필수 자격(참고)</th><th></th></tr></thead>
+        <thead><tr><th>활동</th><th>시리즈</th><th>종류</th><th>분야(쉼표)</th><th>소개</th><th>여는 조직</th><th>모집 시작</th><th>마감</th><th>필수 자격(참고)</th><th></th></tr></thead>
         <tbody id="acts"></tbody>
       </table></div>
       <button type="button" id="add-act" class="icon">+ 활동</button>
@@ -274,7 +275,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
       </details>
       <details>
         <summary>점수 식</summary>
-        <p class="hint">점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 15 × 내용 관심 + 5 × (14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1). 순서는 점수 높은 순 → 마감 가까운 순, 같은 시리즈는 둘까지. 프로필·기록·팔로우가 모두 비면 마감 순이고 내용 관심은 쓰지 않습니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
+        <p class="hint">점수 = 40 × 분야 관심 + 30 × 종류 관심 + 20 × 조직·시리즈 관심 + 15 × 내용 관심 + 5 × (모집 중이고 14일 안 마감이면 1) − 50 × 덜 본 분야(최대 1) + 모집 상태(모집 중 15 · 예정 8 · 마감·끝남 0). 후보는 모든 공개 활동(모집 중 · 예정 · 마감 · 끝남)입니다. 순서는 점수 높은 순 → 모집 상태 순(모집 중은 마감 가까운 순, 예정은 시작 가까운 순, 마감·끝남은 최근에 끝난 순), 같은 시리즈는 둘까지. 프로필·기록·팔로우가 모두 비면 점수 없이 모집 상태 순이고 내용 관심은 쓰지 않습니다. 관심 합 s는 부호 × (1 − e^(−|s|))로 −1~1에 맞춥니다.</p>
         <p class="hint">조직·시리즈 관심 = clamp(max(소속, 조직 팔로우, max(기록의 조직, 0)) + max(시리즈, 0) + min(기록의 조직, 0) + min(시리즈, 0), −1, 1). 팔로우한 시리즈는 시리즈 관심 1.0.</p>
         <p class="hint">내용 관심 = max(0, u · d). 문서 d는 활동 이름·시리즈·분야·소개·조직 이름의 낱말 BM25 무게(IDF × tf(k1+1) / (tf + k1(1 − b + b|d|/평균|d|)), IDF = ln(1 + (N − df + 0.5)/(df + 0.5)))를 L2 정규화한 벡터이고, 말뭉치는 후보와 기록에 쓰인 활동입니다. 사용자 벡터 u = 정규화(Σ양의 기록 가중치 × 감쇠 × d − γ Σ부정 기록 |가중치| × 감쇠 × d + p), p = 무게 × 정규화(직무 무게 × IDF). 내용 관심이 문턱 이상이면 사용자 벡터에 가장 크게 보탠 근거가 이유가 됩니다. 기록 활동 하나(그 활동이 u에 더한 배수 × 그 활동 벡터 · d)와 직무 하나(p 가운데 그 직무의 낱말만 · d) 가운데 큰 쪽(같으면 기록)이 "신청한 ○○와 비슷해요"·"희망 직무 '…'와 맞아요"가 되고, 정하지 못하면 u·d가 큰 낱말 둘입니다.</p>
         <p class="hint">이유 규칙(근거형): 점수·문턱·차례·개수(관심 이유 둘 + 마감 하나)는 그대로고 글만 근거를 보입니다. 분야 이유는 직무 쪽(프로필) ≥ 기록 쪽이면 "희망 직무 '…'와 맞아요"·"현직업 '…'와 맞아요", 아니면 그 분야가 붙은 근거 기록 가운데 가장 무거운 것으로 "찜한 ○○와 비슷해요"·"신청한 ○○와 비슷해요", 근거가 없으면 맞은 직무, 아니면 분야 이름입니다. 종류 이유도 같은 종류의 가장 무거운 근거 기록, 없으면 종류 이름입니다. 근거 기록은 찜·신청·확정된 신청만(약한 신호와 부정 기록은 안 써요)이고 그 후보 자신과 같은 시리즈의 기록은 뺍니다. 같은 글이 둘이면 하나로 셉니다. 활동 이름은 12자, 직무 이름은 10자를 넘으면 앞부분과 "…"로 줄이고, 마지막 글자 받침에 따라 와/과를 붙입니다.</p>
@@ -304,7 +305,8 @@ const STRENGTH = { PARTICIPATED: 2, APPLIED: 1 };
 const RELATION_REASONS = { CONFIRMED: "지난 기수에 참여했어요", APPLIED: "지난 기수에 신청했어요", LIKED: "찜한 시리즈" };
 const RELATION_ORDER = ["CONFIRMED", "APPLIED", "LIKED"];
 const DEFAULT_WEIGHTS = {
-  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], CONTENT_POINTS: [15, "내용"], DEADLINE_POINTS: [5, "마감 임박"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
+  FIELD_POINTS: [40, "분야"], KIND_POINTS: [30, "종류"], ORGANIZATION_POINTS: [20, "조직·시리즈"], CONTENT_POINTS: [15, "내용"], DEADLINE_POINTS: [5, "마감 임박(모집 중만)"], LESS_FIELD_POINTS: [50, "분야 덜 보기(빼기)"],
+  OPEN_POINTS: [15, "모집 상태: 모집 중"], UPCOMING_POINTS: [8, "모집 상태: 모집 예정"], CLOSED_POINTS: [0, "모집 상태: 마감·끝남"],
   PARTICIPATED: [1.0, "기록: 확정된 신청"], APPLIED: [0.7, "기록: 신청"], CANCELLED: [-0.2, "기록: 신청 취소"],
   LIKE: [0.4, "반응: 찜"], COMPLETE: [0.1, "반응: 끝까지 봄"], OPEN_DETAIL: [0.1, "반응: 자세히 봄"], SKIP_EARLY: [-0.05, "반응: 일찍 넘김"], DISMISS: [-0.3, "반응: 관심 없어요"],
   HALF_LIFE_DAYS: [90, "반감기(일)"], DEADLINE_DAYS: [14, "마감 임박 기준(일)"], PER_PROGRAM: [2, "같은 시리즈 최대"], SIZE: [10, "고르는 수"], REASON_THRESHOLD: [0.3, "이유로 쓰는 관심 하한"],
@@ -349,7 +351,7 @@ const EXAMPLE = {
     { id: "a9", name: "서울대 AI 세미나 특강", program: "서울대 AI 세미나", kind: "LECTURE", tags: "데이터·AI", desc: "인공지능이 실제 데이터에서 문제를 푸는 과정을 사례로 설명하는 특강입니다. 질의응답 시간을 넉넉하게 둡니다.", org: "o-snu-cse", end: "2026-11-30", elig: "" },
     { id: "a10", name: "서울대 AI 세미나 워크숍", program: "서울대 AI 세미나", kind: "WORKSHOP", tags: "데이터·AI", desc: "파이썬으로 데이터를 불러와 간단한 모델을 직접 학습시키는 실습 워크숍입니다. 노트북 컴퓨터를 가져오면 됩니다.", org: "o-snu-cse", end: "2026-11-26", elig: "" },
     { id: "a11", name: "UX 디자인 스터디 3기", program: "UX 디자인 스터디", kind: "STUDY", tags: "디자인, UX", desc: "사용자 인터뷰와 화면 설계를 주제로 매주 모여 과제를 나누는 디자인 스터디입니다. 서비스 개선안을 함께 그려 봅니다.", org: "", end: "2026-11-22", elig: "" },
-    { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", desc: "소프트웨어 개발 직무를 준비하는 청년을 위한 교육 과정입니다. 코딩 기초와 프로젝트 실습, 취업 상담을 제공합니다.", org: "o-nipa", end: "2027-01-15", elig: "미취업청년" },
+    { id: "a12", name: "SW 인재 양성 아카데미", program: "SW 인재 아카데미", kind: "BOOTCAMP", tags: "소프트웨어 개발", desc: "소프트웨어 개발 직무를 준비하는 청년을 위한 교육 과정입니다. 코딩 기초와 프로젝트 실습, 취업 상담을 제공합니다.", org: "o-nipa", end: "2027-01-15", start: "2026-12-01", elig: "미취업청년" },
   ],
   history: [
     { act: "a2", kind: "LIKE", days: 30 },
@@ -361,6 +363,7 @@ const EXAMPLE = {
 };
 
 let state = load() || structuredClone(EXAMPLE);
+for (const [k, [def]] of Object.entries(DEFAULT_WEIGHTS)) if (state.weights[k] === undefined) state.weights[k] = def;
 // 예전에 저장한 모양에는 낱말의 "고른 직무"(src)가 없다. 비워 두면 낱말 자신이 직무 이름이다
 state.jobs.forEach((j) => { if (typeof j.src !== "string") j.src = ""; });
 function load() { try { const s = localStorage.getItem("queue-lab-v3"); return s ? JSON.parse(s) : null; } catch { return null; } }
@@ -523,8 +526,25 @@ const similarReason = (e) => { const n = shortened(e.a.name || e.a.program, MAX_
 // 직무 하나의 출처: 낱말 줄의 "고른 직무"(비면 낱말 자신)와 희망/현직업(무게 1.0 · 0.6은 희망, 0.7 · 0.4는 현직업)
 const jobSource = (j) => ({ name: (j.src || "").trim() || j.text.trim(), desired: Number(j.w) === 1.0 || Number(j.w) === 0.6 });
 
-const byDeadline = (x, y) => (x.end ? x.end.getTime() : Infinity) - (y.end ? y.end.getTime() : Infinity) || x.a.id.localeCompare(y.a.id);
-// QueueRules.pick: 점수 순(비면 마감 순)으로 줄 세워 size개까지, 같은 시리즈는 PER_PROGRAM개까지(taken은 이미 센 수)
+// 모집 상태(ActivityFacts.recruitmentStatus): 시작 전이면 예정, 마감(그날 23:59)까지 모집 중, 그 밖(날짜가 없을 때 포함)은 마감·끝남
+const STATUS_ORDER = { OPEN: 0, UPCOMING: 1, CLOSED: 2 };
+const STATUS_NAMES = { OPEN: "모집 중", UPCOMING: "모집 예정", CLOSED: "모집 마감·끝남" };
+function recruitmentStatus(a, now) {
+  const start = a.start ? new Date(a.start + "T00:00:00+09:00") : null;
+  const end = a.end ? new Date(a.end + "T23:59:00+09:00") : null;
+  if (start && now < start) return "UPCOMING";
+  if (end && now <= end) return "OPEN";
+  return "CLOSED";
+}
+// 모집 상태 순(QueueRules.byStatus): 모집 중(마감 가까운 순) → 예정(시작 가까운 순) → 마감·끝남(기준일 늦은 순, 데모는 기준일로 마감일을 씀. 모르면 끝) → 활동 id
+const tm = (d) => d ? d.getTime() : null;
+const asc = (x, y) => (x ?? Infinity) - (y ?? Infinity);
+const byDeadline = (x, y) => (STATUS_ORDER[x.status] - STATUS_ORDER[y.status])
+  || (x.status === "OPEN" ? asc(tm(x.end), tm(y.end)) : 0)
+  || (x.status === "UPCOMING" ? asc(tm(x.start), tm(y.start)) : 0)
+  || (x.status === "CLOSED" ? asc(tm(y.end) ?? -Infinity, tm(x.end) ?? -Infinity) : 0)
+  || x.a.id.localeCompare(y.a.id);
+// QueueRules.pick: 점수 순(비면 모집 상태 순)으로 줄 세워 size개까지, 같은 시리즈는 PER_PROGRAM개까지(taken은 이미 센 수)
 // shownAt(다음 묶음의 다시 넣기: 활동마다 오늘 마지막으로 넣은 묶음 번호)이 있으면 점수보다 먼저 그 번호가 작은 순(없는 활동이 맨 앞, 바로 앞 묶음이 맨 뒤).
 // fill이면 시리즈 한도로 size를 못 채운 자리를 한도에 걸린 후보로 같은 순서대로 채운다
 function pickFrom(list, size, taken, shownAt, empty, W, fill = false) {
@@ -612,14 +632,13 @@ function compute() {
     return null;
   };
 
-  // 후보: 모집이 끝나지 않았고 신청 · 관심 없어요 · 자격 안 됨 · 숨긴 시리즈가 아닌 활동
+  // 후보: 모든 공개 활동(모집 중 · 예정 · 마감 · 끝남, 2026-11-23) 가운데 신청 · 관심 없어요 · 자격 안 됨 · 숨긴 시리즈가 아닌 것
   const gone = new Map(); const cands = [];
   for (const a of state.acts) {
     const endDate = a.end ? new Date(a.end + "T23:59:00+09:00") : null;
-    if (endDate && endDate < now) { gone.set(a.id, "모집이 끝났어요"); continue; }
     if (excludedActs[a.id]) { gone.set(a.id, excludedActs[a.id]); continue; }
     if (hiddenPrograms[a.program]) { gone.set(a.id, "시리즈 숨기기를 남겼어요"); continue; }
-    cands.push({ a, endDate });
+    cands.push({ a, endDate, status: recruitmentStatus(a, now), startDate: a.start ? new Date(a.start + "T00:00:00+09:00") : null });
   }
 
   // 내용 관심: 말뭉치 = 후보 + 기록에 쓰인 활동(모집이 끝난 것 포함)
@@ -643,7 +662,7 @@ function compute() {
   }
 
   const results = [];
-  for (const { a, endDate } of cands) {
+  for (const { a, endDate, status, startDate } of cands) {
     const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1].v - x[1].v);
     const field = fields.length ? fields[0][1].v : 0;
     const kind = squash(kindH[a.kind] || 0);
@@ -697,13 +716,17 @@ function compute() {
     }
     const kindReason = () => { const e = strongestOf(a, (past) => past.kind === a.kind); return e ? similarReason(e) : KINDS[a.kind]; };
     const daysLeft = endDate ? (endDate - now) / 86400000 : null;
-    const near = daysLeft !== null && daysLeft >= 0 && daysLeft <= W.DEADLINE_DAYS;
+    const near = status === "OPEN" && daysLeft !== null && daysLeft >= 0 && daysLeft <= W.DEADLINE_DAYS;
+    // 모집 상태의 날짜 이유: 모집 중은 14일 안 마감만, 예정은 시작일, 마감·끝남은 그 시리즈를 팔로우했는지에 따라
+    const statusReason = status === "OPEN" ? (near ? `${endDate.getMonth() + 1}월 ${endDate.getDate()}일 마감` : null)
+      : status === "UPCOMING" ? (startDate ? `${startDate.getMonth() + 1}월 ${startDate.getDate()}일 모집 시작` : null)
+      : followProgram ? "지난 기수 · 다음 기수가 열리면 알림" : "지난 기수 · 다음 기수는 팔로우로 알림";
     const interests = [...new Set([orgReason, ...fieldReasons, contentReason, kind >= W.REASON_THRESHOLD ? kindReason() : null].filter(Boolean))];
-    const reasons = [...interests.slice(0, 2), ...(near ? [`${endDate.getMonth() + 1}월 ${endDate.getDate()}일 마감`] : [])];
+    const reasons = [...interests.slice(0, 2), ...(statusReason ? [statusReason] : [])];
     const lessV = Math.min(1, tagsOf(a).reduce((s, t) => s + (less[norm(t)] || 0), 0));
-    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, content: W.CONTENT_POINTS * content, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV };
-    const points = parts.field + parts.kind + parts.org + parts.content + parts.deadline + parts.less;
-    results.push({ a, points, parts, reasons, end: endDate, raw: { field, kind, orgScore, content } });
+    const parts = { field: W.FIELD_POINTS * field, kind: W.KIND_POINTS * kind, org: W.ORGANIZATION_POINTS * orgScore, content: W.CONTENT_POINTS * content, deadline: near ? W.DEADLINE_POINTS : 0, less: -W.LESS_FIELD_POINTS * lessV, status: W[status + "_POINTS"] };
+    const points = parts.field + parts.kind + parts.org + parts.content + parts.deadline + parts.less + parts.status;
+    results.push({ a, points, parts, reasons, end: endDate, start: startDate, status, raw: { field, kind, orgScore, content } });
   }
   results.sort(empty ? byDeadline : (x, y) => y.points - x.points || byDeadline(x, y));
   const { picked, dropped } = pickFrom(results, W.SIZE, {}, new Map(), empty, W);
@@ -753,6 +776,7 @@ function renderInputs() {
     <td><input aria-label="분야" data-k="acts.${i}.tags" value="${esc(a.tags)}"></td>
     <td class="desc"><textarea rows="3" aria-label="소개" data-k="acts.${i}.desc">${esc(a.desc)}</textarea></td>
     <td><select aria-label="여는 조직" data-k="acts.${i}.org">${orgOptions(a.org)}</select></td>
+    <td><input aria-label="모집 시작" type="date" data-k="acts.${i}.start" value="${esc(a.start || "")}"></td>
     <td><input aria-label="마감" type="date" data-k="acts.${i}.end" value="${esc(a.end)}"></td>
     <td><input aria-label="필수 자격" data-k="acts.${i}.elig" value="${esc(a.elig)}" placeholder="예: 대학생"></td>
     <td><button type="button" class="icon" data-del="acts.${i}" aria-label="활동 지우기">✕</button></td></tr>`).join("");
@@ -765,17 +789,17 @@ function renderInputs() {
 const fmt = (v) => (v >= 0 ? "+" : "") + v.toFixed(1);
 function renderResult() {
   const r = compute();
-  $("mode").textContent = r.empty ? "프로필과 기록이 비어 마감 순" : "개인 맞춤";
+  $("mode").textContent = r.empty ? "프로필과 기록이 비어 모집 상태 순" : "개인 맞춤";
   $("meta").innerHTML = `<span>후보 <b>${r.candidates}</b>개</span><span>고른 수 <b>${r.picks.length}</b>개</span><span>빠짐 <b>${r.excluded.length}</b>개</span>`;
   const max = Math.max(1, ...r.picks.map((p) => Object.values(p.parts).filter((v) => v > 0).reduce((s, v) => s + v, 0)));
   $("picks").innerHTML = r.picks.map((p, i) => {
-    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["content", "--bar-content", "내용"], ["deadline", "--bar-deadline", "마감"]];
+    const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["content", "--bar-content", "내용"], ["deadline", "--bar-deadline", "마감"], ["status", "--bar-status", "모집 상태"]];
     const bar = seg.filter(([k]) => p.parts[k] > 0).map(([k, c]) => `<span style="width:${(p.parts[k] / max) * 100}%;background:var(${c})"></span>`).join("");
     const legend = [...seg, ["less", "--bar-less", "덜 보기"]].filter(([k]) => Math.abs(p.parts[k]) > 0.05).map(([k, c, n]) => `<span><i style="background:var(${c})"></i>${n} ${fmt(p.parts[k])}</span>`).join("");
     const org = state.orgs.find((o) => o.id === p.a.org)?.name;
     return `<li><span class="rank">${i + 1}</span>
       <div><div class="pick-name">${esc(p.a.name)}</div>
-      <div class="pick-sub">${esc(KINDS[p.a.kind])} · ${esc(p.a.program)}${org ? " · " + esc(org) : ""}</div></div>
+      <div class="pick-sub">${esc(STATUS_NAMES[p.status])} · ${esc(KINDS[p.a.kind])} · ${esc(p.a.program)}${org ? " · " + esc(org) : ""}</div></div>
       <div class="score">${r.empty ? "—" : p.points.toFixed(1)}<small>점</small></div>
       <div class="breakdown">
         <div class="chips">${p.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("") || `<span class="chip muted">이유 없음</span>`}</div>
@@ -933,7 +957,7 @@ function renderTrace() {
     $("phone").innerHTML = `${liked ? `<span class="liked">찜 ✓</span>` : ""}
       <div class="p-kind">${esc(KINDS[card.a.kind])} · ${esc(card.a.program)}</div>
       <div class="p-name">${esc(card.a.name)}</div>
-      <div class="p-sub">${org ? esc(org) + " · " : ""}${card.a.end ? esc(card.a.end) + " 마감" : ""} · 분야 ${esc(tagsOf(card.a).join(", ") || "없음")}</div>
+      <div class="p-sub">${esc(STATUS_NAMES[recruitmentStatus(card.a, new Date(state.today + "T12:00:00+09:00"))])} · ${org ? esc(org) + " · " : ""}${card.a.end ? esc(card.a.end) + " 마감" : ""} · 분야 ${esc(tagsOf(card.a).join(", ") || "없음")}</div>
       <div class="chips">${card.pl.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>`;
   } else {
     $("phone").className = "phone done";
