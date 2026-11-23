@@ -246,7 +246,7 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
         <div class="rows" id="less"></div>
         <button type="button" id="add-less" class="icon">+ 분야</button>
       </details>
-      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 찜이면 "찜한 시리즈"가 이유입니다. 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 후보에서 빠집니다(후보 활동이 남지 않은 시리즈도 빠져요). 캘린더에만·지금 상태는 쓰지 않습니다. 찜이 관심 신호(0.4)이고, 자격은 자격 안 됨 반응으로 받습니다.</p>
+      <p class="hint">신청(확정된 신청 1.0 · 신청 0.7)은 활동마다 강한 것 하나만 셉니다. 기록의 활동 글은 내용 관심의 사용자 벡터에도 들어가고(부정 기록은 빼요), 같은 시리즈의 다른 기수는 확정이면 "지난 기수에 참여했어요", 신청이면 "지난 기수에 신청했어요", 찜이면 "찜한 시리즈"가 이유입니다(카드에 보이는 대표 활동 자신에 남긴 기록은 세지 않아요. 찜한 활동의 카드에는 "찜한 시리즈"가 붙지 않습니다). 신청한 활동과 자격 안 됨을 남긴 활동은 그 활동만, 관심 없어요·시리즈 숨기기를 남긴 활동은 그 시리즈 전체가 후보에서 빠집니다(후보 활동이 남지 않은 시리즈도 빠져요). 캘린더에만·지금 상태는 쓰지 않습니다. 찜이 관심 신호(0.4)이고, 자격은 자격 안 됨 반응으로 받습니다.</p>
     </section>
 
     <section class="panel" aria-labelledby="h-weights">
@@ -661,7 +661,8 @@ function compute() {
     tagsOf(a).forEach((t) => add(fieldH, norm(t), w));
     add(kindH, a.kind, w);
     add(programH, a.program, w);
-    if (rel) { const cur = relation[a.program]; if (!cur || RELATION_ORDER.indexOf(rel) < RELATION_ORDER.indexOf(cur)) relation[a.program] = rel; }
+    // 시리즈마다 관계를 남긴 활동과 그 관계(이유는 카드의 대표 활동이 아닌 다른 활동의 관계만 쓴다)
+    if (rel) { const m = relation[a.program] || (relation[a.program] = {}); const cur = m[a.id]; if (!cur || RELATION_ORDER.indexOf(rel) < RELATION_ORDER.indexOf(cur)) m[a.id] = rel; }
     if (a.org) { add(orgH, a.org, W.ORGANIZATION_SHARE * w); const p = parentOf(a.org); if (p) add(orgH, p.id, W.PARENT_SHARE * w); }
   }
   state.less.forEach((l) => { if (l.tag.trim()) add(less, norm(l.tag), decay(l.days)); });
@@ -742,6 +743,11 @@ function compute() {
   if (!taste) { taste = vunit(vmean(jobVectors.map((x) => [x.v, x.w]))); if (taste) tasteFrom = "job"; }
   const useTaste = Number(W.USE_TASTE) !== 0 && !empty && !!taste;
 
+  // 시리즈의 대표 활동(카드에 보이는 활동): 시리즈 관계 이유에서 그 활동 자신의 기록을 뺀다(찜한 활동의 카드에 "찜한 시리즈"가 붙지 않게)
+  const shownOf = {};
+  for (const c of cands) { const x = { a: c.a, status: c.status, end: c.endDate, start: c.startDate }; if (!shownOf[c.a.program] || byDeadline(x, shownOf[c.a.program]) < 0) shownOf[c.a.program] = x; }
+  const relationOf = (a) => Object.entries(relation[a.program] || {}).filter(([id]) => id !== shownOf[a.program].a.id).map(([, r]) => r)
+    .sort((x, y) => RELATION_ORDER.indexOf(x) - RELATION_ORDER.indexOf(y))[0] || null;
   const results = [];
   for (const { a, endDate, status, startDate } of cands) {
     const fields = tagsOf(a).map((t) => [t, fieldInterest(t)]).sort((x, y) => y[1].v - x[1].v);
@@ -759,7 +765,7 @@ function compute() {
     const orgScore = Math.min(1, Math.max(-1, positive + Math.min(0, hist) + Math.min(0, program)));
     let orgReason = null;
     if (followProgram) orgReason = `팔로우한 ${a.program}`;
-    else if (relation[a.program] && program > 0) orgReason = RELATION_REASONS[relation[a.program]];
+    else if (relationOf(a) && program > 0) orgReason = RELATION_REASONS[relationOf(a)];
     else if (followOrg) orgReason = `팔로우한 ${followOrg.name}`;
     else if (member) orgReason = `내 소속 ${member[0]}`;
     else if (atOrg >= W.REASON_THRESHOLD) orgReason = `${orgs[a.org]?.name}에 관심을 보였어요`;
