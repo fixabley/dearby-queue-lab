@@ -146,16 +146,50 @@ main.trace { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }
 ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5px; }
 .sticky { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
 @media (max-width: 900px) { .sticky { position: static; } }
+/* 계산 출처: 서버 계산(기본)과 브라우저 근사 계산. body[data-mode]가 어느 보기를 보일지 정한다 */
+.source { max-width: 1280px; margin: 0 auto 16px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--panel); display: grid; gap: 6px; }
+.source.server { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
+.source.approx { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-soft); }
+.source-top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; }
+.src-line { font-size: 13px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.source p { margin: 0; font-size: 12px; color: var(--muted); }
+.source a { color: var(--accent); overflow-wrap: anywhere; }
+.source.approx .src-line b { color: var(--warn); }
+.source.server .src-line b { color: var(--accent); }
+body[data-mode="loading"] #view-calc, body[data-mode="loading"] #view-trace,
+body[data-mode="server"] #view-calc, body[data-mode="server"] #view-trace, body[data-mode="server"] .approx-only { display: none !important; }
+body:not([data-mode="server"]) #view-server { display: none !important; }
+.status { font-size: 12.5px; color: var(--muted); min-height: 1.5em; margin: -4px 0 8px; }
+.status.bad { color: var(--bad); }
+.status.wait { color: var(--warn); }
+.busy #s-picks, .busy #s-rank-wrap { opacity: 0.55; transition: opacity 0.2s; }
+.picker { display: grid; gap: 6px; margin-bottom: 8px; }
+.picker .chips:empty::before { content: "없음"; color: var(--muted); font-size: 12px; }
+.chip-x { border: 0; background: none; color: inherit; padding: 0 0 0 4px; font-size: 11px; line-height: 1; cursor: pointer; }
+.chip-x:hover { color: var(--bad); }
+.row.term { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) 64px minmax(0, 1fr) auto; }
+.row.shist { grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.3fr) 70px auto; }
+.row.sless { grid-template-columns: minmax(0, 2fr) 70px auto; }
+@media (max-width: 520px) { .row.term, .row.shist, .row.sless { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.range-row { display: flex; gap: 8px; align-items: center; }
+.range-row output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; min-width: 3.5ch; color: var(--ink); }
+input[type="range"] { padding: 0; border: 0; background: none; accent-color: var(--accent); }
+input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+label.check { display: flex; gap: 6px; align-items: center; color: var(--ink); font-size: 13px; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.rank-table td.num, .rank-table th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rank-table tr.picked td:first-child, .rank-table tr.picked td:nth-child(2) { font-weight: 600; }
+.mono { font-family: var(--font-mono); font-size: 11.5px; overflow-wrap: anywhere; }
 </style>
 </head>
-<body>
+<body data-mode="loading">
 
 <header>
   <div>
     <h1>Dearby 맞춤 대기열 실험실</h1>
-    <p>서버의 맞춤 대기열 규칙(QueueRules · TasteMatch · ContentMatch, PR #284 · #285 · #286 · #287 · #291 · #300 · #305 · #321)을 옮긴 계산기입니다. 서버의 취향 유사도는 <b>임베딩(KURE-v1) 0.7 + 낱말 BM25 0.3</b>을 합친 값이고 MMR은 임베딩으로 잽니다. 브라우저에서는 그 모델을 돌릴 수 없어, 이 데모는 임베딩 자리에 <b>BM25 낱말 문서 벡터</b>를 넣어 계산합니다(아래 "점수 식" › 데모의 근사). 낱말 쪽은 서버와 같은 BM25 사용자 벡터입니다. 카드 하나는 시리즈 하나이고, 같은 시리즈 이름의 후보 활동(여러 기수)은 한 카드로 묶입니다. 회원의 프로필, 활동 기록, 반응, 후보 활동, 가중치를 바꾸면 오른쪽 순서가 바로 다시 계산됩니다. 아래 값은 모두 예시입니다.</p>
+    <p>맞춤 대기열이 어떤 시리즈를 어떤 순서로 고르는지 바꿔 보는 실험실입니다. 서버 계산(기본)은 운영 서버의 추천 시뮬레이션 API(server #329)가 <b>실제 공개 활동 · 실제 임베딩(KURE-v1) · 실제 규칙</b>(QueueRules · TasteMatch · ContentMatch, PR #284 · #285 · #286 · #287 · #291 · #300 · #305 · #321 · #329)으로 계산한 점수 내역과 MMR로 고른 순서를 그대로 보여 줍니다. 서버의 취향 유사도는 임베딩 0.7 + 낱말 BM25 0.3을 합친 값이고 MMR은 임베딩으로 잽니다. 가상 회원의 직무 · 소속 · 팔로우 · 기록과 가중치를 바꾸면 잠깐 뒤 다시 계산합니다. 카드 하나는 시리즈 하나이고, 같은 시리즈의 후보 활동(여러 기수)은 한 카드로 묶입니다. 실제 회원의 정보는 쓰지 않고 아무것도 저장하지 않습니다.</p>
   </div>
-  <div class="head-actions">
+  <div class="head-actions approx-only">
     <div class="tabs" role="tablist" aria-label="보기">
       <button type="button" role="tab" id="tab-calc" data-view="calc" aria-selected="true">계산기</button>
       <button type="button" role="tab" id="tab-trace" data-view="trace" aria-selected="false">동작 추적</button>
@@ -163,6 +197,109 @@ ol.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 12.5
     <button id="reset" type="button">예시로 되돌리기</button>
   </div>
 </header>
+
+<div id="source" class="source" role="status" aria-live="polite"><div class="src-line">서버 계산을 불러오는 중…</div></div>
+
+<main id="view-server">
+  <div class="col">
+    <section class="panel" aria-labelledby="h-s-member">
+      <h2 id="h-s-member">가상 회원 <small>API의 profile로 보냄</small></h2>
+      <div class="tools">
+        <button type="button" id="s-example">예시 프로필</button>
+        <button type="button" id="s-blank">빈 프로필</button>
+      </div>
+      <div class="grid2">
+        <label for="s-today">오늘(서울)
+          <input id="s-today" type="text" disabled value="서버 시계">
+        </label>
+      </div>
+      <p class="hint">서버 계산에서는 날짜를 바꿀 수 없어요. 서버는 지금 시각(서울)으로만 계산합니다(모집 상태 · 마감 임박 · 감쇠의 기준). 다른 날을 보려면 근사 계산으로 보세요.</p>
+      <details open>
+        <summary>직무</summary>
+        <div class="picker" id="s-desiredJobs"></div>
+        <div class="picker" id="s-currentJobs"></div>
+        <p class="hint">실제 직무 분류(<span class="mono">desiredJobs</span> · <span class="mono">currentJobs</span>)에서 고릅니다. 그 분류와 상위 분류의 이름 · 별칭이 직무 낱말이 되고(희망 1.0 · 상위 0.6, 현직업 0.7 · 상위 0.4), 기록이 없으면 그 분류의 임베딩이 취향 벡터입니다. "관심 분야"를 따로 고르는 신호는 실제 추천에 없어요: 분야 관심은 직무 낱말과 기록(찜 · 신청한 활동의 분야)에서만 생깁니다.</p>
+        <p class="hint" style="margin-top:10px">직무 낱말 <span class="mono">jobTerms</span> (실험실만: 분류 없이 글로)</p>
+        <div class="rows" id="s-terms"></div>
+        <button type="button" id="s-add-term" class="icon">+ 낱말</button>
+        <p class="hint">분류의 낱말과 같이 쓰이고 임베딩은 없습니다. "이유에 쓸 이름"은 "희망 직무 '…'와 맞아요"에 들어가는 이름(비우면 낱말)입니다.</p>
+      </details>
+      <details open>
+        <summary>소속 · 팔로우</summary>
+        <div class="picker" id="s-memberOrganizations"></div>
+        <div class="picker" id="s-followedOrganizations"></div>
+        <div class="picker" id="s-followedPrograms"></div>
+        <p class="hint">조직은 공개 활동을 여는 조직 · 등록된 조직과 그 상위 조직, 시리즈는 후보가 되는 공개 시리즈만 고를 수 있어요.</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-s-hist">
+      <h2 id="h-s-hist">기록과 반응 <small><span class="mono">history</span> · 실제 공개 활동</small></h2>
+      <div class="rows" id="s-history"></div>
+      <button type="button" id="s-add-hist" class="icon">+ 기록</button>
+      <p class="hint" id="s-hist-note">신청 · 확정된 신청 · 찜은 한 활동에 하나만(가장 강한 것), 같은 반응은 한 번만 보냅니다(실제 기록과 같은 제약). 신청 · 자격 안 됨은 그 활동만, 관심 없어요 · 시리즈 숨기기는 시리즈 전체를 후보에서 뺍니다.</p>
+      <details open>
+        <summary>분야 덜 보기 <span class="mono">lessFields</span></summary>
+        <div class="rows" id="s-less"></div>
+        <button type="button" id="s-add-less" class="icon">+ 분야</button>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-s-weights">
+      <h2 id="h-s-weights">가중치 <small>서버 기본값에서 시작 · 바꾼 칸만 보냄</small></h2>
+      <div class="grid2">
+        <label for="s-lambda">MMR λ (1이면 점수 순 그대로)
+          <span class="range-row"><input id="s-lambda" type="range" min="0" max="1" step="0.05"><output id="s-lambda-out" for="s-lambda"></output></span>
+        </label>
+        <label for="s-size">고르는 수 (시리즈, 1~30)
+          <input id="s-size" type="number" min="1" max="30" step="1">
+        </label>
+        <label class="check" for="s-emb"><input id="s-emb" type="checkbox"> 임베딩 쓰기</label>
+      </div>
+      <p class="hint">임베딩을 끄면 임베딩이 없을 때처럼 계산합니다(취향 유사도는 낱말만, MMR은 순서를 바꾸지 않아요).</p>
+      <div id="s-weights"></div>
+      <div class="tools" style="margin-top:10px"><button type="button" id="s-weights-reset">가중치 기본값으로</button></div>
+    </section>
+  </div>
+
+  <div class="col sticky">
+    <section class="panel" aria-labelledby="h-s-result" id="s-result">
+      <h2 id="h-s-result">오늘의 맞춤 대기열 <small id="s-mode"></small></h2>
+      <div class="status" id="s-status" role="status" aria-live="polite"></div>
+      <div class="result-meta" id="s-meta"></div>
+      <div class="tools">
+        <button type="button" id="s-next" class="primary">다음 묶음 받기</button>
+        <button type="button" id="s-first">처음 묶음으로</button>
+      </div>
+      <ol class="picks" id="s-picks"></ol>
+      <details id="s-received-wrap" hidden>
+        <summary id="s-received-title">앞에서 받은 묶음</summary>
+        <ol class="log" id="s-received"></ol>
+      </details>
+      <details id="s-rank-wrap">
+        <summary id="s-rank-title">전체 점수 순위</summary>
+        <div class="act-table"><table class="rank-table">
+          <thead><tr><th class="num">순위</th><th>시리즈 · 대표</th><th class="num">점수</th><th class="num">이번 자리</th><th>관심 이유</th></tr></thead>
+          <tbody id="s-rank"></tbody>
+        </table></div>
+        <p class="hint">거른 뒤 모든 후보 시리즈를 점수 순으로(같으면 대표의 모집 상태 순). "이번 자리"가 비면 고르는 수를 넘었거나 MMR에 밀린 것입니다.</p>
+      </details>
+      <details>
+        <summary id="s-excluded-title">후보에서 빠진 활동</summary>
+        <ol class="picks excluded" id="s-excluded"></ol>
+      </details>
+      <details>
+        <summary id="s-ignored-title">무시된 id</summary>
+        <div id="s-ignored"></div>
+      </details>
+      <details>
+        <summary>점수 식</summary>
+        <p class="hint">시리즈 점수 = 분야 + 종류 + 조직·시리즈 + 취향 유사도 + 마감 임박 + 모집 상태 − 덜 보기(가장 높은 후보 활동의 것). 분야 · 종류 · 조직·시리즈는 배점 × 관심(−1~1), 취향 유사도는 배점 × ((1 − β) × 임베딩 코사인 + β × 낱말 BM25)이고 임베딩이 없으면 낱말만입니다. 막대의 진한 분홍은 임베딩 쪽 몫, 연한 분홍은 낱말 쪽 몫입니다.</p>
+        <p class="hint">MMR: 점수 순으로 줄 세운 시리즈를 한 장씩, λ × 점수/100 − (1 − λ) × (이미 고른 카드와의 최대 코사인)이 가장 큰 것으로 고릅니다. 이미 고른 카드는 앞 묶음의 마지막 카드로 시작합니다. 다시 넣은 카드의 점수 순위는 다시 넣기 안의 순위입니다. 자세한 규칙은 서버 문서 docs/api/recommendation.md와 근사 계산의 "점수 식"에 있습니다(식은 같고 근사 계산만 임베딩 자리에 낱말 벡터를 씁니다).</p>
+      </details>
+    </section>
+  </div>
+</main>
 
 <main id="view-trace" class="trace" hidden>
   <div class="col">
@@ -1209,6 +1346,410 @@ let startView = "calc";
 try { startView = localStorage.getItem("queue-lab-view") || (location.hash === "#trace" ? "trace" : "calc"); } catch {}
 if (location.hash === "#trace") startView = "trace";
 showView(startView);
+</script>
+
+<script>
+// ===== 서버 계산(기본): 운영 서버의 추천 시뮬레이션 API(server #329, docs/api/recommendation.md "추천 시뮬레이션") =====
+// 처음 defaults 요청이 실패하면(다른 출처라 CORS로 막힘 포함) 위의 근사 계산기로 돈다. 위 계산기 코드는 그 모드가 쓴다
+const API = "https://api.dearby.wid.io.kr";
+const PAGES_URL = "https://fixabley.github.io/dearby-queue-lab/";
+const RECORD_NAMES = { CONFIRMED: "확정된 신청", APPLIED: "신청", BOOKMARKED: "찜", CANCELLED: "신청 취소", DISMISS: "관심 없어요", HIDE_PROGRAM: "시리즈 숨기기", INELIGIBLE: "자격 안 됨", COMPLETE: "끝까지 봄", OPEN_DETAIL: "자세히 봄", SKIP_EARLY: "일찍 넘김" };
+const PARTICIPATION = ["CONFIRMED", "APPLIED", "BOOKMARKED"]; // 강한 순
+const EXCLUDE_NAMES = { APPLIED: "신청함", INELIGIBLE: "자격 안 됨", DISMISSED: "관심 없어요한 시리즈", HIDDEN_PROGRAM: "숨긴 시리즈" };
+const TASTE_SOURCES = { HISTORY: "취향 벡터: 기록(긍정 − 부정)", JOB: "취향 벡터: 직무(기록 없음)", NONE: "취향 벡터 없음 · 취향 유사도는 낱말만" };
+const WEIGHT_GROUPS = { points: "점수 배점", history: "기록과 반응의 무게", affinity: "직무 · 소속 · 팔로우", content: "낱말 쪽(BM25)", reasons: "이유의 문턱" };
+const WEIGHT_LABELS = {
+  "points.field": "분야", "points.kind": "종류", "points.organization": "조직·시리즈", "points.taste": "취향 유사도(임베딩 + 낱말)", "points.lexicalShare": "취향 유사도에서 낱말의 몫 β",
+  "points.deadline": "마감 임박(모집 중만)", "points.deadlineDays": "마감 임박 기준(일)", "points.lessField": "분야 덜 보기(빼기)", "points.open": "모집 상태: 모집 중", "points.upcoming": "모집 상태: 모집 예정", "points.closed": "모집 상태: 마감·끝남",
+  "history.confirmed": "확정된 신청", "history.applied": "신청", "history.bookmark": "찜", "history.complete": "끝까지 봄", "history.openDetail": "자세히 봄", "history.skipEarly": "일찍 넘김", "history.dismiss": "관심 없어요", "history.cancelled": "신청 취소", "history.halfLifeDays": "반감기(일)",
+  "affinity.desiredJob": "희망 직무", "affinity.desiredJobAncestor": "희망 직무의 상위", "affinity.currentJob": "현직업", "affinity.currentJobAncestor": "현직업의 상위", "affinity.memberSelf": "소속: 같은 조직", "affinity.memberRelated": "소속: 상위·하위 조직",
+  "affinity.followedProgram": "팔로우한 시리즈", "affinity.followedOrganization": "팔로우한 조직", "affinity.organizationShare": "기록→여는 조직", "affinity.parentShare": "기록→바로 위 조직", "affinity.broadChildren": "넓은 상위 조직 기준(하위 수)",
+  "content.k1": "k1(낱말 빈도 포화)", "content.b": "b(문서 길이 보정)", "content.negativeScale": "γ(부정 기록을 빼는 정도)", "content.profileWeight": "직무 낱말 p의 무게",
+  "reasons.interest": "이유로 쓰는 관심 하한", "reasons.content": "낱말 쪽 이유 하한", "reasons.taste": "취향 이유 하한", "reasons.similar": "취향 이유: 기록 활동과 코사인 하한", "reasons.job": "취향 이유: 직무와 코사인 하한",
+};
+const PICKERS = {
+  desiredJobs: ["희망 직무", "job", "maxJobs"], currentJobs: ["현재 직무(현직업)", "job", "maxJobs"],
+  memberOrganizations: ["소속 조직", "org", "maxOrganizations"], followedOrganizations: ["팔로우한 조직", "org", "maxOrganizations"], followedPrograms: ["팔로우한 시리즈", "series", "maxPrograms"],
+};
+const SKEY = "queue-lab-server-v1";
+
+const srv = { defaults: null, cands: null, fields: [], jobs: [], jobById: new Map(), actById: new Map(), seriesById: new Map(), orgById: new Map(), fieldById: new Map(),
+  cache: new Map(), seq: 0, timer: null, tick: null, waitUntil: 0, last: null, lastKey: null, inflightKey: null, status: "idle", error: null, chosenApprox: false, bootError: null };
+const blankServer = () => ({ profile: { desiredJobs: [], currentJobs: [], jobTerms: [], memberOrganizations: [], followedOrganizations: [], followedPrograms: [], history: [], lessFields: [] }, weights: {}, size: 10, useEmbeddings: true, received: [] });
+let sstate = null;
+function loadServer() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY) || "null"); if (!s || typeof s !== "object") return null;
+    const b = blankServer();
+    for (const k of Object.keys(b.profile)) if (Array.isArray(s.profile?.[k])) b.profile[k] = s.profile[k];
+    if (s.weights && typeof s.weights === "object") b.weights = s.weights;
+    if (Number.isFinite(s.size)) b.size = s.size;
+    if (typeof s.useEmbeddings === "boolean") b.useEmbeddings = s.useEmbeddings;
+    if (Array.isArray(s.received)) b.received = s.received.filter(Array.isArray);
+    return b;
+  } catch { return null; }
+}
+function saveServer() { try { localStorage.setItem(SKEY, JSON.stringify(sstate)); } catch {} }
+const num6 = (v) => String(+Number(v).toFixed(4));
+const ymd = (s) => (s ? String(s).slice(0, 10) : "");
+const hm = (s) => (s ? String(s).replace("T", " ").slice(0, 16) : "");
+
+async function api(path, init = {}, timeout = 10000) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const res = await fetch(API + path, { ...init, signal: ctl.signal, credentials: "omit", cache: "no-store" });
+    const text = await res.text(); let body = null; try { body = text ? JSON.parse(text) : null; } catch {}
+    return { res, body };
+  } finally { clearTimeout(t); }
+}
+
+function setMode(m) {
+  document.body.dataset.mode = m;
+  if (m === "approx") showView($("view-trace").hidden ? "calc" : "trace");
+  renderBanner();
+}
+
+function renderBanner() {
+  const el = $("source"); const m = document.body.dataset.mode;
+  const approxNote = `<p>서버의 취향 유사도는 임베딩(KURE-v1) 0.7 + 낱말 BM25 0.3을 합친 값이고 MMR은 임베딩으로 잽니다. 브라우저에서는 그 모델을 돌릴 수 없어, 근사 계산은 임베딩 자리에 BM25 낱말 문서 벡터를 넣어 계산합니다(계산기 › "점수 식" › 데모의 근사). 낱말 쪽은 서버와 같은 BM25 사용자 벡터이고 식 · 무게 · 단계는 서버와 같습니다. 활동 · 조직 · 날짜는 모두 예시 값이고 고칠 수 있어요.</p>`;
+  if (m === "loading") { el.className = "source"; el.innerHTML = `<div class="src-line">서버 계산을 불러오는 중…</div>`; return; }
+  if (m === "approx") {
+    el.className = "source approx";
+    el.innerHTML = srv.chosenApprox
+      ? `<div class="source-top"><div class="src-line"><b>브라우저 근사 계산</b>으로 보고 있어요(임베딩 대신 낱말 벡터, 예시 활동). 서버 계산과 견주는 데 쓰세요.</div><button type="button" id="to-server">서버 계산으로 돌아가기</button></div>${approxNote}`
+      : `<div class="src-line"><b>서버에 닿지 못해 브라우저 근사 계산으로 보여 주고 있어요</b>(임베딩 대신 낱말 벡터, 예시 활동). 실제 서버 계산은 <a href="${PAGES_URL}">${PAGES_URL}</a> 에서 볼 수 있어요.</div><p>까닭: ${esc(srv.bootError || "알 수 없음")}</p>${approxNote}`;
+    return;
+  }
+  const d = srv.defaults; const r = srv.last; const e = (r && r.embedding) || d.embedding;
+  const model = String(e.model || "").replace(/^.*\//, "").replace(/@.*$/, "");
+  const embText = r && !r.embedding.used ? `임베딩 끔(${esc(model)} ${e.activitiesWithEmbedding}/${e.activities} 있음)` : `임베딩 ${esc(model)} ${e.activitiesWithEmbedding}/${e.activities}`;
+  el.className = "source server";
+  el.innerHTML = `<div class="source-top"><div class="src-line"><b>서버 계산</b> · 규칙 판 ${esc((r && r.rules.version) || d.rulesVersion)} · ${embText} · 직무 분류 임베딩 ${e.jobCategoriesWithEmbedding}/${e.jobCategories} · 계산 시각 ${r ? esc(hm(r.computedAt)) : "—"}</div><button type="button" id="to-approx">근사 계산으로 보기</button></div>
+    <p>운영 서버(api.dearby.wid.io.kr)의 공개 활동 ${e.activities}개 · 후보 시리즈 ${srv.cands.series.length}개로 계산합니다. 근사 계산(브라우저, 예시 활동)과 견주려면 "근사 계산으로 보기"를 누르세요. 동작 추적 보기는 근사 계산에만 있어요.</p>`;
+}
+
+// ---- 입력 ----
+function flattenJobs(items, path = [], out = []) {
+  for (const n of items || []) {
+    const name = n.names?.ko || n.name; const p = [...path, name];
+    out.push({ id: n.id, name, label: p.join(" › "), top: p[0] });
+    flattenJobs(n.children, p, out);
+  }
+  return out;
+}
+function optionsFor(type, exclude) {
+  const ex = new Set(exclude);
+  if (type === "job") {
+    const groups = new Map();
+    for (const j of srv.jobs) { if (ex.has(j.id)) continue; if (!groups.has(j.top)) groups.set(j.top, []); groups.get(j.top).push(j); }
+    return [...groups].map(([top, list]) => `<optgroup label="${esc(top)}">${list.map((j) => `<option value="${esc(j.id)}">${esc(j.label)}</option>`).join("")}</optgroup>`).join("");
+  }
+  if (type === "org") return [...srv.orgById.values()].filter((o) => !ex.has(o.id)).sort((a, b) => a.name.localeCompare(b.name, "ko"))
+    .map((o) => `<option value="${esc(o.id)}">${esc(o.name)}${o.parentId && srv.orgById.get(o.parentId) ? ` (${esc(srv.orgById.get(o.parentId).name)})` : ""}</option>`).join("");
+  return srv.cands.series.filter((s) => !ex.has(s.series.id)).map((s) => `<option value="${esc(s.series.id)}">${esc(s.series.name)}</option>`).join("");
+}
+const nameFor = (type, id) => type === "job" ? srv.jobById.get(id)?.label : type === "org" ? srv.orgById.get(id)?.name : srv.seriesById.get(id)?.series.name;
+function actOptionsServer(sel) {
+  const known = srv.actById.has(sel);
+  return (known ? "" : `<option value="${esc(sel)}" selected>(지금 공개 활동이 아님) ${esc(sel)}</option>`) + srv.cands.series.map((s) => `<optgroup label="${esc(s.series.name)}">${s.activities.map((a) => `<option value="${esc(a.id)}"${a.id === sel ? " selected" : ""}>${esc(a.name)} · ${esc(STATUS_NAMES[a.status] || a.status)}</option>`).join("")}</optgroup>`).join("");
+}
+const fieldOptions = (sel) => (sel && !srv.fieldById.has(sel) ? `<option value="${esc(sel)}" selected>(없는 분야) ${esc(sel)}</option>` : "") + srv.fields.map((f) => `<option value="${esc(f.id)}"${f.id === sel ? " selected" : ""}>${esc(f.name)}</option>`).join("");
+
+function renderServerInputs() {
+  const p = sstate.profile; const L = srv.defaults.limits || {};
+  for (const [key, [title, type, limitKey]] of Object.entries(PICKERS)) {
+    const list = p[key]; const max = L[limitKey] ?? Infinity;
+    $("s-" + key).innerHTML = `<label for="s-add-${key}">${esc(title)} <span class="mono">${key}</span>${list.length >= max ? ` <span class="chip warn">최대 ${max}개</span>` : ""}
+      <select id="s-add-${key}" data-spick="${key}"${list.length >= max ? " disabled" : ""}><option value="">더하기…</option>${optionsFor(type, list)}</select></label>
+      <div class="chips">${list.map((id) => `<span class="chip">${esc(nameFor(type, id) || "(없는 id) " + id)}<button type="button" class="chip-x" data-sremove="${key}|${esc(id)}" aria-label="${esc(nameFor(type, id) || id)} 빼기">✕</button></span>`).join("")}</div>`;
+  }
+  $("s-terms").innerHTML = p.jobTerms.map((t, i) => `<div class="row term">
+    <label for="s-t-${i}">낱말<input id="s-t-${i}" data-s="jobTerms.${i}.text" value="${esc(t.text)}" maxlength="50"></label>
+    <label for="s-tn-${i}">이유에 쓸 이름<input id="s-tn-${i}" data-s="jobTerms.${i}.name" value="${esc(t.name || "")}" placeholder="${esc(t.text)}" maxlength="50"></label>
+    <label for="s-tw-${i}">무게<input id="s-tw-${i}" type="number" min="0" max="1" step="0.1" data-s="jobTerms.${i}.weight" data-num value="${esc(t.weight)}"></label>
+    <label for="s-td-${i}">희망/현직업<select id="s-td-${i}" data-s="jobTerms.${i}.desired" data-bool><option value="true"${t.desired ? " selected" : ""}>희망 직무</option><option value="false"${t.desired ? "" : " selected"}>현직업</option></select></label>
+    <button type="button" class="icon" data-sdel="jobTerms.${i}" aria-label="낱말 지우기">✕</button></div>`).join("");
+  $("s-add-term").disabled = p.jobTerms.length >= (L.maxJobTerms ?? 30);
+  const kinds = srv.defaults.recordKinds || Object.keys(RECORD_NAMES);
+  $("s-history").innerHTML = p.history.map((h, i) => `<div class="row shist">
+    <label for="s-ha-${i}">활동<select id="s-ha-${i}" data-s="history.${i}.activityId">${actOptionsServer(h.activityId)}</select></label>
+    <label for="s-hk-${i}">기록<select id="s-hk-${i}" data-s="history.${i}.kind">${kinds.map((k) => `<option value="${k}"${k === h.kind ? " selected" : ""}>${esc(RECORD_NAMES[k] || k)}</option>`).join("")}</select></label>
+    <label for="s-hd-${i}">며칠 전<input id="s-hd-${i}" type="number" min="0" max="${L.maxDaysAgo ?? 3650}" step="1" data-s="history.${i}.daysAgo" data-num value="${esc(h.daysAgo)}"></label>
+    <button type="button" class="icon" data-sdel="history.${i}" aria-label="기록 지우기">✕</button></div>`).join("") || `<p class="hint">기록이 없어요.</p>`;
+  $("s-add-hist").disabled = p.history.length >= (L.maxHistory ?? 200);
+  $("s-less").innerHTML = p.lessFields.map((l, i) => `<div class="row sless">
+    <label for="s-la-${i}">분야<select id="s-la-${i}" data-s="lessFields.${i}.tagId">${fieldOptions(l.tagId)}</select></label>
+    <label for="s-ld-${i}">며칠 전<input id="s-ld-${i}" type="number" min="0" max="${L.maxDaysAgo ?? 3650}" step="1" data-s="lessFields.${i}.daysAgo" data-num value="${esc(l.daysAgo)}"></label>
+    <button type="button" class="icon" data-sdel="lessFields.${i}" aria-label="분야 지우기">✕</button></div>`).join("");
+  $("s-add-less").disabled = p.lessFields.length >= (L.maxLessFields ?? 50);
+  const lam = weightValue("points.mmrLambda");
+  $("s-lambda").value = lam; $("s-lambda-out").value = num6(lam);
+  $("s-size").value = sstate.size; $("s-size").max = L.maxSize ?? 30;
+  $("s-emb").checked = !!sstate.useEmbeddings;
+  const W = srv.defaults.weights;
+  $("s-weights").innerHTML = Object.entries(W).map(([g, fields]) => `<details${g === "points" ? " open" : ""}><summary>${esc(WEIGHT_GROUPS[g] || g)} <span class="mono">${esc(g)}</span></summary><div class="grid2">${
+    Object.entries(fields).filter(([f]) => !(g === "points" && f === "mmrLambda")).map(([f, def]) => { const k = `${g}.${f}`; const v = weightValue(k);
+      return `<label for="sw-${k}">${esc(WEIGHT_LABELS[k] || f)} <span class="chip warn" data-def="${esc(k)}"${v === def ? " hidden" : ""}>기본 ${esc(def)}</span><input id="sw-${k}" type="number" step="any" data-sw="${esc(k)}" value="${esc(sstate.weights[k] ?? def)}"></label>`; }).join("")
+  }</div></details>`).join("");
+  renderHistNote();
+}
+// 이 칸의 지금 값(바꾸지 않았거나 숫자가 아니면 기본값)
+function weightValue(k) {
+  const [g, f] = k.split("."); const def = srv.defaults.weights[g]?.[f];
+  const v = sstate.weights[k];
+  return v === undefined || v === "" || !Number.isFinite(Number(v)) ? def : Number(v);
+}
+
+// 실제 기록과 같은 제약: 한 활동에 참가 기록(확정 · 신청 · 찜)은 가장 강한 것 하나, 같은 반응은 가장 최근 하나
+function dedupeHistory(list) {
+  const part = new Map(), react = new Map();
+  for (const h of list) {
+    if (!h.activityId || !h.kind) continue;
+    const days = Math.max(0, Math.round(Number(h.daysAgo) || 0));
+    const item = { activityId: h.activityId, kind: h.kind, daysAgo: days };
+    if (PARTICIPATION.includes(h.kind)) {
+      const cur = part.get(h.activityId);
+      if (!cur || PARTICIPATION.indexOf(h.kind) < PARTICIPATION.indexOf(cur.kind) || (cur.kind === h.kind && days < cur.daysAgo)) part.set(h.activityId, item);
+    } else {
+      const key = h.activityId + "|" + h.kind; const cur = react.get(key);
+      if (!cur || days < cur.daysAgo) react.set(key, item);
+    }
+  }
+  const out = [...part.values(), ...react.values()];
+  return { list: out, dropped: list.filter((h) => h.activityId && h.kind).length - out.length };
+}
+function renderHistNote() {
+  const { dropped } = dedupeHistory(sstate.profile.history);
+  const base = "신청 · 확정된 신청 · 찜은 한 활동에 하나만(가장 강한 것), 같은 반응은 한 번만 보냅니다(실제 기록과 같은 제약). 신청 · 자격 안 됨은 그 활동만, 관심 없어요 · 시리즈 숨기기는 시리즈 전체를 후보에서 뺍니다.";
+  $("s-hist-note").innerHTML = esc(base) + (dropped > 0 ? ` <span class="chip warn">겹친 기록 ${dropped}개는 보내지 않아요</span>` : "");
+}
+
+function buildRequest() {
+  const p = sstate.profile;
+  const weights = {};
+  for (const [k, v] of Object.entries(sstate.weights)) {
+    const [g, f] = k.split("."); const def = srv.defaults.weights[g]?.[f];
+    if (def === undefined || v === "" || v === null || !Number.isFinite(Number(v)) || Number(v) === def) continue;
+    (weights[g] ||= {})[f] = Number(v);
+  }
+  const body = { profile: {
+    desiredJobs: p.desiredJobs, currentJobs: p.currentJobs,
+    jobTerms: p.jobTerms.filter((t) => String(t.text).trim()).map((t) => ({ text: String(t.text).trim(), weight: t.weight !== "" && Number.isFinite(Number(t.weight)) ? Number(t.weight) : 1, desired: t.desired !== false, ...(String(t.name || "").trim() ? { name: String(t.name).trim() } : {}) })),
+    memberOrganizations: p.memberOrganizations, followedOrganizations: p.followedOrganizations, followedPrograms: p.followedPrograms,
+    history: dedupeHistory(p.history).list,
+    lessFields: p.lessFields.filter((l) => l.tagId).map((l) => ({ tagId: l.tagId, daysAgo: Math.max(0, Math.round(Number(l.daysAgo) || 0)) })),
+  } };
+  if (Object.keys(weights).length) body.weights = weights;
+  body.size = sstate.size; body.useEmbeddings = !!sstate.useEmbeddings;
+  if (sstate.received.length) body.received = sstate.received;
+  return body;
+}
+
+// ---- 부르기: 입력을 잠깐 모아(디바운스) 부르고, 같은 요청은 다시 부르지 않는다. 429면 Retry-After만큼 기다렸다 한 번 다시 ----
+function schedule(delay = 600) {
+  saveServer();
+  clearTimeout(srv.timer);
+  const wait = Math.max(delay, srv.waitUntil - Date.now());
+  if (srv.status !== "wait") { srv.status = "pending"; renderServerStatus(); }
+  srv.timer = setTimeout(() => runSimulate(false), wait);
+}
+const currentKey = () => JSON.stringify(buildRequest());
+async function runSimulate(retried) {
+  const key = currentKey();
+  if (srv.cache.has(key)) { srv.last = srv.cache.get(key); srv.lastKey = key; srv.status = "ok"; srv.error = null; return renderServerResult(); }
+  if (srv.inflightKey === key) { srv.status = "loading"; return renderServerStatus(); } // 같은 요청이 이미 나갔다: 그 답을 기다린다
+  srv.inflightKey = key; srv.status = "loading"; renderServerStatus();
+  let out;
+  try { out = await api("/v1/lab/recommendation/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: key }, 20000); }
+  catch (e) {
+    if (srv.inflightKey === key) srv.inflightKey = null;
+    if (key !== currentKey()) return; // 그 사이 입력이 바뀌었다
+    srv.status = "error";
+    srv.error = e && e.name === "AbortError" ? "서버가 20초 안에 답하지 않았어요." : "서버에 닿지 못했어요(네트워크 오류 또는 CORS).";
+    return renderServerStatus();
+  }
+  if (srv.inflightKey === key) srv.inflightKey = null;
+  if (out.res.ok) srv.cache.set(key, out.body);
+  if (key !== currentKey()) return; // 그 사이 입력이 바뀌었다(답은 캐시에 남아 다시 돌아오면 쓴다)
+  if (out.res.status === 429) {
+    const wait = Math.max(1, Math.ceil(Number(out.res.headers.get("Retry-After")) || 10));
+    srv.waitUntil = Date.now() + wait * 1000;
+    if (!retried) {
+      srv.status = "wait"; renderServerStatus();
+      clearTimeout(srv.timer); srv.timer = setTimeout(() => { srv.status = "loading"; runSimulate(true); }, wait * 1000);
+      clearInterval(srv.tick); srv.tick = setInterval(() => { if (srv.status !== "wait") return clearInterval(srv.tick); renderServerStatus(); }, 1000);
+      return;
+    }
+    srv.status = "error"; srv.error = `요청이 너무 잦아요(429, 1분에 시뮬레이션 20번). ${wait}초 뒤에 입력을 바꾸면 다시 계산해요.`;
+    return renderServerStatus();
+  }
+  if (!out.res.ok) {
+    const b = out.body || {};
+    srv.status = "error";
+    srv.error = `서버가 ${out.res.status}${out.res.status >= 500 ? "(서버 오류)" : ""}로 답했어요${b.detail ? ": " + b.detail : b.message ? ": " + b.message : ""}${b.code ? ` (${b.code})` : ""}.`;
+    return renderServerStatus();
+  }
+  srv.last = out.body; srv.lastKey = key; srv.status = "ok"; srv.error = null;
+  renderServerResult();
+}
+function renderServerStatus() {
+  const el = $("s-status");
+  const fresh = srv.last && srv.lastKey === JSON.stringify(buildRequest());
+  const texts = { pending: "입력을 모으는 중…", loading: "서버에서 계산 중…", wait: `요청이 잦아 잠시 뒤 다시 계산해요(${Math.max(0, Math.ceil((srv.waitUntil - Date.now()) / 1000))}초).`, error: srv.error || "", ok: "", idle: "" };
+  el.className = "status" + (srv.status === "error" ? " bad" : srv.status === "wait" ? " wait" : "");
+  el.textContent = texts[srv.status] + (srv.status === "error" && srv.last ? " 아래는 앞서 받은 결과예요." : "");
+  $("s-result").classList.toggle("busy", !fresh && !!srv.last);
+  $("s-next").disabled = !fresh || !srv.last.batch.length || sstate.received.length >= (srv.defaults.limits?.maxReceivedBatches ?? 20);
+  $("s-first").disabled = !sstate.received.length;
+}
+
+// ---- 결과 ----
+function dateOf(rep) {
+  if (rep.status === "UPCOMING") return rep.recruitStart ? `${ymd(rep.recruitStart)} 모집 시작` : "";
+  if (rep.status === "OPEN") return rep.recruitEnd ? `${ymd(rep.recruitEnd)} 마감` : "";
+  return rep.referenceDate ? `기준일 ${ymd(rep.referenceDate)}` : "";
+}
+function partsOf(s, W) {
+  const beta = Number(W.points.lexicalShare), tw = Number(W.points.taste);
+  const embed = s.tasteEmbedding !== null && s.tasteEmbedding !== undefined;
+  return { field: s.fieldPoints, kind: s.kindPoints, org: s.organizationPoints,
+    taste: embed ? tw * (1 - beta) * s.tasteEmbedding : 0, content: embed ? tw * beta * (s.tasteLexical || 0) : s.tastePoints,
+    deadline: s.deadlinePoints, status: s.statusPoints, less: s.lessFieldPoints };
+}
+const f2 = (v) => (v === null || v === undefined ? "—" : Number(v).toFixed(2));
+const f3 = (v) => (v === null || v === undefined ? "—" : Number(v).toFixed(3));
+function renderServerResult() {
+  const r = srv.last; if (!r) return;
+  renderBanner(); renderServerStatus();
+  $("s-today").value = `${hm(r.computedAt)} (서버 시계)`;
+  const W = r.rules.weights;
+  const rankBySeries = new Map(r.ranking.map((x) => [x.series.id, x]));
+  const fresh = r.batch.filter((b) => !b.reinserted).length;
+  const pickRank = (b) => (b.reinserted ? b.position - fresh : b.position);
+  const moved = r.batch.filter((b) => b.mmr && b.mmr.scoreRank !== pickRank(b)).length;
+  $("s-mode").textContent = r.personalized ? "개인 맞춤" : "프로필과 기록이 비어 모집 상태 순";
+  $("s-meta").innerHTML = `<span><b>${sstate.received.length + 1}</b>번째 묶음</span><span>후보 시리즈 <b>${r.counts.candidateSeries}</b>개 (활동 ${r.counts.candidateActivities}개 / 공개 ${r.counts.listedActivities}개)</span><span>고른 수 <b>${r.batch.length}</b>개</span><span>빠진 활동 <b>${r.counts.excludedActivities}</b>개</span>${r.personalized ? `<span>${esc(TASTE_SOURCES[r.tasteSource] || r.tasteSource)}${r.embedding.used ? "" : " · 임베딩 끔"}</span>` : ""}${r.batch.some((b) => b.mmr) ? `<span>MMR로 자리가 바뀐 카드 <b>${moved}</b>장</span>` : ""}`;
+  const seg = [["field", "--bar-field", "분야"], ["kind", "--bar-kind", "종류"], ["org", "--bar-org", "조직·시리즈"], ["taste", "--bar-content", "취향·임베딩"], ["content", "--bar-lexical", "취향·낱말"], ["deadline", "--bar-deadline", "마감"], ["status", "--bar-status", "모집 상태"]];
+  const max = Math.max(1, ...r.batch.map((b) => Object.values(partsOf(b.score, W)).filter((v) => v > 0).reduce((s, v) => s + v, 0)));
+  const nameInBatch = new Map(r.batch.map((b) => [b.series.id, b.position]));
+  $("s-picks").innerHTML = r.batch.map((b) => {
+    const s = b.score; const parts = partsOf(s, W); const rep = b.representative;
+    const bar = seg.filter(([k]) => parts[k] > 0).map(([k, c]) => `<span style="width:${(parts[k] / max) * 100}%;background:var(${c})"></span>`).join("");
+    const legend = [...seg, ["less", "--bar-less", "덜 보기"]].filter(([k]) => Math.abs(parts[k]) > 0.05).map(([k, c, n]) => `<span><i style="background:var(${c})"></i>${n} ${fmt(parts[k])}</span>`).join("");
+    const date = dateOf(rep);
+    const tasteLine = s.taste === null ? "" : s.tasteEmbedding !== null && s.tasteEmbedding !== undefined
+      ? `취향 ${f3(s.taste)} = ${num6(1 - W.points.lexicalShare)} × 임베딩 코사인 ${f3(s.tasteEmbedding)} + ${num6(W.points.lexicalShare)} × 낱말 ${f3(s.tasteLexical)}`
+      : `취향 ${f3(s.taste)} = 낱말 ${f3(s.tasteLexical)} (임베딩 없음)`;
+    const detail = r.personalized ? `<div class="mmr">분야${s.field ? ` ${esc(s.field.name)}` : ""} 관심 ${f2(s.fieldInterest)} · 종류 관심 ${f2(s.kindInterest)} · 조직·시리즈 관심 ${f2(s.organizationInterest)}${tasteLine ? " · " + tasteLine : ""}${s.deadline ? " · 마감 임박" : ""} · 덜 보기 ${f2(s.lessField)}</div>` : "";
+    const m = b.mmr;
+    const simName = m && m.similarTo ? m.similarTo.name : null;
+    const simNote = m && m.similarTo ? (nameInBatch.has(m.similarTo.id) && nameInBatch.get(m.similarTo.id) < b.position ? `${esc(simName)}${withParticle(simName)} 최대` : `앞 묶음의 ${esc(simName)}${withParticle(simName)} 최대`) : "먼저 고른 카드 없음";
+    const mmrLine = m ? `<div class="mmr">MMR ${num6(m.lambda)} × ${(s.total / 100).toFixed(3)} − ${num6(1 - m.lambda)} × ${m.redundancy.toFixed(2)} (${simNote}) = ${m.value.toFixed(3)} · ${b.reinserted ? "다시 넣기 안 " : ""}점수 순 ${m.scoreRank}위${m.scoreRank !== pickRank(b) ? ` → ${pickRank(b)}위` : ""}</div>` : "";
+    const acts = rankBySeries.get(b.series.id)?.activities || [];
+    const subs = b.activityCount >= 2 && acts.length ? `<div class="subacts" aria-label="묶인 활동">${acts.map((x) => `<div class="subact"><span>${x.activity.id === rep.id ? "<b>대표</b> " : ""}${esc(x.activity.name)} · ${esc(STATUS_NAMES[x.activity.status] || x.activity.status)}${dateOf(x.activity) ? " · " + esc(dateOf(x.activity)) : ""}</span><span class="num">${r.personalized ? Number(x.points).toFixed(1) : "—"}</span></div>`).join("")}</div>` : "";
+    return `<li><span class="rank">${b.position}</span>
+      <div><div class="pick-name">${esc(b.series.name)}${b.reinserted ? ` <span class="chip muted">다시 넣음</span>` : ""}</div>
+      <div class="pick-sub">대표 ${esc(rep.name)} · ${esc(STATUS_NAMES[rep.status] || rep.status)}${date ? " · " + esc(date) : ""} · ${esc(KINDS[b.series.kind] || b.series.kind)}${b.series.organizationNames?.length ? " · " + esc(b.series.organizationNames.join(", ")) : ""}${b.activityCount >= 2 ? " · 기수 " + b.activityCount + "개" : ""}${b.series.fields?.length ? " · 분야 " + esc(b.series.fields.map((f) => f.name).join(", ")) : ""}</div></div>
+      <div class="score">${r.personalized ? s.total.toFixed(1) : "—"}<small>점</small></div>
+      <div class="breakdown">
+        <div class="chips">${b.reasons.map((x) => `<span class="chip">${esc(x)}</span>`).join("") || `<span class="chip muted">이유 없음</span>`}</div>
+        ${r.personalized ? `<div class="bar" aria-hidden="true">${bar}</div><div class="legend">${legend || "<span>점수 0</span>"}</div>` : ""}
+        ${detail}${mmrLine}
+      </div>${subs}</li>`;
+  }).join("") || `<li class="empty">고를 후보가 없어요.</li>`;
+  // 앞에서 받은 묶음
+  $("s-received-wrap").hidden = !sstate.received.length;
+  $("s-received-title").textContent = `앞에서 받은 묶음 ${sstate.received.length}개 (received로 보냄)`;
+  $("s-received").innerHTML = sstate.received.map((ids, i) => `<li><b>${i + 1}번째</b>: ${ids.map((id) => esc(srv.seriesById.get(id)?.series.name || id)).join(", ")}</li>`).join("");
+  // 전체 점수 순위
+  $("s-rank-title").textContent = `전체 점수 순위 ${r.ranking.length}개`;
+  $("s-rank").innerHTML = r.ranking.map((x) => `<tr class="${x.position ? "picked" : ""}"><td class="num">${x.rank}</td><td>${esc(x.series.name)}${x.received ? ` <span class="chip muted">앞에서 받음</span>` : ""}<div class="pick-sub">${esc(x.representative.name)} · ${esc(STATUS_NAMES[x.representative.status] || x.representative.status)}</div></td><td class="num">${r.personalized ? x.score.total.toFixed(1) : "—"}</td><td class="num">${x.position ? x.position + "번째" : "—"}</td><td>${x.reasons.map((t) => `<span class="chip">${esc(t)}</span>`).join(" ") || ""}</td></tr>`).join("") || `<tr><td colspan="5" class="empty">후보가 없어요.</td></tr>`;
+  // 빠진 것
+  $("s-excluded-title").textContent = `후보에서 빠진 활동 ${r.excluded.length}개`;
+  $("s-excluded").innerHTML = r.excluded.map((e) => `<li><div><div class="pick-name">${esc(e.series.name)}</div><div class="pick-sub">${esc(e.activity.name)} · ${esc(STATUS_NAMES[e.activity.status] || e.activity.status)}</div></div><span class="chip warn">${esc(EXCLUDE_NAMES[e.reason] || e.reason)}</span></li>`).join("") || `<li class="empty">없어요.</li>`;
+  // 무시된 id
+  const IG = { activityIds: "활동", programIds: "시리즈", organizationIds: "조직", jobCategoryIds: "직무 분류", tagIds: "분야" };
+  const ig = Object.entries(r.ignored || {}).filter(([, v]) => v && v.length);
+  $("s-ignored-title").textContent = `무시된 id ${ig.reduce((n, [, v]) => n + v.length, 0)}개`;
+  $("s-ignored").innerHTML = ig.length ? ig.map(([k, v]) => `<p class="hint">${esc(IG[k] || k)}: <span class="mono">${v.map(esc).join(", ")}</span></p>`).join("") + `<p class="hint">공개 활동 · 그 조직 · 있는 직무 분류 · 분야가 아니라 계산에 쓰지 않은 id입니다.</p>` : `<p class="hint">없어요. 보낸 id를 모두 썼어요.</p>`;
+}
+
+// ---- 예시 ----
+function exampleServer() {
+  const s = blankServer();
+  const backend = srv.jobs.find((j) => j.name === "백엔드"); if (backend) s.profile.desiredJobs.push(backend.id);
+  const spring = srv.cands.series.find((x) => x.series.name.includes("스프링캠프"));
+  if (spring) s.profile.history.push({ activityId: spring.activities[0].id, kind: "BOOKMARKED", daysAgo: 10 });
+  const other = srv.cands.series.find((x) => x.series.name.includes("현대키즈모터쇼"));
+  if (other) s.profile.history.push({ activityId: other.activities[0].id, kind: "DISMISS", daysAgo: 5 });
+  return s;
+}
+
+// ---- 이벤트(서버 보기 안에서만) ----
+function setServerPath(path, value) {
+  const keys = path.split("."); let o = sstate.profile;
+  for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+  o[keys.at(-1)] = value;
+}
+$("view-server").addEventListener("input", (e) => {
+  const el = e.target;
+  if (el.id === "s-lambda") { $("s-lambda-out").value = num6(el.value); sstate.weights["points.mmrLambda"] = Number(el.value); return schedule(); }
+  if (el.id === "s-size") { const n = Math.round(Number(el.value)); if (Number.isFinite(n) && n >= 1) { sstate.size = Math.min(n, srv.defaults.limits?.maxSize ?? 30); schedule(); } return; }
+  if (el.dataset.sw) {
+    const k = el.dataset.sw; sstate.weights[k] = el.value === "" ? undefined : Number(el.value);
+    if (sstate.weights[k] === undefined) delete sstate.weights[k];
+    const [g, f] = k.split("."); const chip = el.parentElement.querySelector("[data-def]"); if (chip) chip.hidden = weightValue(k) === srv.defaults.weights[g][f];
+    return schedule();
+  }
+  if (el.dataset.s && el.tagName !== "SELECT") { setServerPath(el.dataset.s, el.hasAttribute("data-num") ? (el.value === "" ? "" : Number(el.value)) : el.value); renderHistNote(); return schedule(); }
+});
+$("view-server").addEventListener("change", (e) => {
+  const el = e.target;
+  if (el.id === "s-emb") { sstate.useEmbeddings = el.checked; return schedule(); }
+  if (el.dataset.spick) { if (el.value) { sstate.profile[el.dataset.spick].push(el.value); renderServerInputs(); schedule(); } return; }
+  if (el.dataset.s && el.tagName === "SELECT") { setServerPath(el.dataset.s, el.hasAttribute("data-bool") ? el.value === "true" : el.value); renderHistNote(); return schedule(); }
+});
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "to-approx") { srv.chosenApprox = true; return setMode("approx"); }
+  if (t.id === "to-server") { srv.chosenApprox = false; setMode("server"); return renderServerResult(); }
+  if (!t.closest("#view-server")) return;
+  const L = srv.defaults.limits || {};
+  if (t.dataset.sremove) { const [key, id] = t.dataset.sremove.split("|"); sstate.profile[key] = sstate.profile[key].filter((x) => x !== id); renderServerInputs(); return schedule(); }
+  if (t.dataset.sdel) { const [list, i] = t.dataset.sdel.split("."); sstate.profile[list].splice(Number(i), 1); renderServerInputs(); return schedule(); }
+  if (t.id === "s-add-term") { sstate.profile.jobTerms.push({ text: "", name: "", weight: 1, desired: true }); renderServerInputs(); return; }
+  if (t.id === "s-add-hist") { const a = srv.cands.series[0]?.activities[0]; if (a && sstate.profile.history.length < (L.maxHistory ?? 200)) { sstate.profile.history.push({ activityId: a.id, kind: "BOOKMARKED", daysAgo: 0 }); renderServerInputs(); schedule(); } return; }
+  if (t.id === "s-add-less") { const f = srv.fields[0]; if (f) { sstate.profile.lessFields.push({ tagId: f.id, daysAgo: 0 }); renderServerInputs(); schedule(); } return; }
+  if (t.id === "s-weights-reset") { sstate.weights = {}; renderServerInputs(); return schedule(); }
+  if (t.id === "s-example") { sstate = exampleServer(); renderServerInputs(); return schedule(0); }
+  if (t.id === "s-blank") { sstate = blankServer(); renderServerInputs(); return schedule(0); }
+  if (t.id === "s-next") { const r = srv.last; if (!r || srv.lastKey !== JSON.stringify(buildRequest())) return; sstate.received.push(r.batch.map((b) => b.series.id)); return schedule(0); }
+  if (t.id === "s-first") { sstate.received = []; return schedule(0); }
+});
+
+// ---- 시작: defaults가 오면 서버 계산, 못 오면 근사 계산 ----
+async function boot() {
+  try {
+    const d = await api("/v1/lab/recommendation/defaults", {}, 8000);
+    if (!d.res.ok || !d.body?.weights) throw new Error(`기본값 요청이 ${d.res.status}로 답했어요.`);
+    const [c, f, j] = await Promise.all([api("/v1/lab/recommendation/candidates"), api("/v1/fields"), api("/v1/job-categories")]);
+    for (const [name, x] of [["후보", c], ["분야", f], ["직무 분류", j]]) if (!x.res.ok) throw new Error(`${name} 요청이 ${x.res.status}로 답했어요.`);
+    srv.defaults = d.body; srv.cands = c.body;
+    srv.fields = (f.body.items || []).map((x) => ({ id: x.id, name: x.name })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    srv.jobs = flattenJobs(j.body.items);
+    srv.jobs.forEach((x) => srv.jobById.set(x.id, x)); srv.fields.forEach((x) => srv.fieldById.set(x.id, x));
+    srv.cands.series.forEach((s) => { srv.seriesById.set(s.series.id, s); s.activities.forEach((a) => srv.actById.set(a.id, a)); });
+    (srv.cands.organizations || []).forEach((o) => srv.orgById.set(o.id, o));
+  } catch (e) {
+    srv.bootError = e instanceof TypeError ? "서버 응답을 받지 못했어요(이 주소에서는 CORS로 막혔거나 네트워크 오류)." : e && e.name === "AbortError" ? "서버가 8초 안에 답하지 않았어요." : String(e && e.message || e);
+    return setMode("approx");
+  }
+  sstate = loadServer() || exampleServer();
+  setMode("server");
+  renderServerInputs();
+  schedule(0);
+}
+boot();
 </script>
 </body>
 </html>
